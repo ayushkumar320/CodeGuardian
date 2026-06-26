@@ -20,11 +20,12 @@ Package CodeGuardian as an easy-to-install GitHub Action and prepare it for deve
 ```mermaid
 flowchart TD
   A["Developer reads README"] --> B["Copies workflow file"]
-  B --> C["Adds optional Groq or HF secret"]
-  C --> D["Opens test PR"]
+  B --> C["Opens test PR without model secrets"]
+  C --> D["CodeGuardian runs deterministic mode"]
   D --> E["CodeGuardian check runs"]
   E --> F["Developer reviews risk report"]
-  F --> G["Team sets required check if useful"]
+  F --> G["Adds optional Groq or HF secret"]
+  G --> H["Team sets required check after trust period"]
 ```
 
 ## Default Configuration
@@ -35,7 +36,9 @@ Recommended default:
 mode: advisory
 comment_on_low_risk: false
 max_findings_in_comment: 5
+max_findings_in_check: 3
 inline_comments: false
+skip_comment_for_docs_only: true
 deterministic_fallback: true
 model_provider_priority:
   - groq
@@ -48,6 +51,10 @@ model_provider_priority:
 ```text
 You are packaging CodeGuardian AI as a reusable GitHub Action.
 
+Context loading:
+- Read CONTEXT-GRAPH.md first.
+- Then open only ROOT, PLAN, P6, and P1 unless the graph points you elsewhere.
+
 Requirements:
 - Provide action metadata.
 - Provide a minimal workflow example.
@@ -55,6 +62,7 @@ Requirements:
 - Support Groq, Hugging Face, and deterministic mode.
 - Publish GitHub Checks and sticky PR comments.
 - Upload report artifacts.
+- Default to advisory mode and non-noisy comments.
 - Include examples for public and private repos.
 - Create release versioning rules.
 - Add integration tests with fixture PR diffs.
@@ -104,7 +112,8 @@ Give me:
 - A new user can install in under 10 minutes.
 - The first PR produces a check.
 - No model key is required for first run.
+- The default first run is advisory and does not block merges.
 - Docs explain Groq and Hugging Face setup.
+- Docs explain the suggested rollout from advisory to guarded to strict.
 - Required-check setup is documented.
 - Releases are versioned and changelogged.
-

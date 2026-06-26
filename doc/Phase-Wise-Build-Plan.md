@@ -30,7 +30,10 @@ flowchart TD
   GROQ --> REPORT
   HF --> REPORT
   REPORT --> CHECK["GitHub Check Summary"]
-  REPORT --> COMMENT["Sticky PR Comment"]
+  REPORT --> ART["Workflow Artifacts"]
+  REPORT --> DECIDE{"Should comment?"}
+  DECIDE -->|Yes| COMMENT["Sticky PR Comment"]
+  DECIDE -->|No| QUIET["No PR comment"]
   CHECK --> MERGE["GitHub PR Merge Box"]
   COMMENT --> USER["Developer replies in PR"]
   USER --> ACT
@@ -47,12 +50,14 @@ For MVP, CodeGuardian can run as a GitHub Action instead of a traditional hosted
 3. GitHub Action checks out the repository.
 4. Action computes the diff against the base branch.
 5. Action runs deterministic analyzers.
-6. Action runs LangGraph agent workflow.
-7. Action calls Groq and/or Hugging Face models using repository secrets.
-8. Action publishes a GitHub Check summary.
-9. Action creates or updates a sticky PR comment.
-10. Developer replies to the PR comment for clarification or commands.
-11. New comments can trigger a follow-up workflow.
+6. Action runs LangGraph evidence workflow.
+7. Action routes model calls through Groq, Hugging Face, or deterministic templates.
+8. Action validates model output and calculates the risk score.
+9. Action publishes a GitHub Check summary for the merge decision.
+10. Action uploads compact JSON and Markdown report artifacts.
+11. Action creates or updates a sticky PR comment only when policy and noise settings allow it.
+12. Developer replies in the PR with explicit `@codeguardian` commands.
+13. New comments can trigger a read-only answer or a recheck workflow.
 
 ### Required GitHub Events
 
@@ -80,7 +85,8 @@ This event list is illustrative only. The actual workflow file should be created
 | --- | --- |
 | `GROQ_API_KEY` | Fast hosted inference for supported open models |
 | `HF_TOKEN` | Hugging Face Inference API or model access |
-| `CODEGUARDIAN_MODE` | Optional policy mode override |
+
+Policy mode should normally live in `.codeguardian/policy.yml`, not in secrets.
 
 ### GitHub Permissions
 
@@ -148,6 +154,10 @@ Output format:
 ```text
 You are the Senior Developer responsible for the CodeGuardian AI MVP.
 
+Context loading:
+- Read CONTEXT-GRAPH.md first.
+- Then open only ROOT, PLAN, P0, P1, P2, and WFI unless the graph points you elsewhere.
+
 Goal:
 Design the technical foundation for a GitHub Actions-based PR risk checker using LangGraph, deterministic analyzers, Groq, and Hugging Face.
 
@@ -209,6 +219,7 @@ Build the first working GitHub Action that analyzes PR diffs and posts a CodeGua
 - Risk scoring v0.
 - GitHub Check summary writer.
 - Sticky PR comment writer.
+- Comment decision logic.
 - No external dashboard.
 
 ### Workflow
@@ -223,7 +234,10 @@ flowchart TD
   F --> G["Run LangGraph agents"]
   G --> H["Generate risk report"]
   H --> I["Write GitHub Check summary"]
-  H --> J["Create or update sticky PR comment"]
+  H --> J["Upload report artifacts"]
+  H --> K{"Should comment?"}
+  K -->|Yes| L["Create or update sticky PR comment"]
+  K -->|No| M["Stay quiet"]
 ```
 
 ### LangGraph MVP Nodes
@@ -236,7 +250,7 @@ flowchart TD
 | `test_recommendation` | Recommend tests using naming and import heuristics |
 | `risk_score` | Produce category scores and final score |
 | `llm_summarize` | Generate concise GitHub-ready report |
-| `publish_result` | Write check output and sticky comment |
+| `publish_result` | Write check output, artifacts, and optional sticky comment |
 
 ### Product Manager Prompt Template
 
@@ -249,7 +263,7 @@ Inputs:
 - Example PR diff summary
 - CodeGuardian risk report
 - GitHub check output
-- Sticky PR comment
+- Sticky PR comment, when policy allows it
 
 Review criteria:
 1. Is the risk score understandable?
@@ -271,6 +285,10 @@ Output:
 ```text
 You are the Senior Developer implementing Phase 1.
 
+Context loading:
+- Read CONTEXT-GRAPH.md first.
+- Then open only ROOT, PLAN, P1, P2, and WFI unless the graph points you elsewhere.
+
 Build a GitHub Actions-based PR checker for CodeGuardian AI.
 
 Technical requirements:
@@ -285,7 +303,9 @@ Technical requirements:
 - Fall back to Hugging Face when `HF_TOKEN` is present.
 - Fall back to deterministic summary if no model key exists.
 - Publish a GitHub check summary.
-- Create or update a sticky PR comment.
+- Upload compact report artifacts.
+- Create or update a sticky PR comment when the comment policy allows it.
+- Skip long comments for docs-only and low-risk changes by default.
 
 Output:
 - Implementation plan
@@ -418,6 +438,10 @@ Output:
 ```text
 You are the Senior Developer building the LangGraph workflow for CodeGuardian AI.
 
+Context loading:
+- Read CONTEXT-GRAPH.md first.
+- Then open only ROOT, PLAN, P2, and P1 unless the graph points you elsewhere.
+
 Goal:
 Implement a structured, evidence-based agent pipeline for PR risk analysis.
 
@@ -520,6 +544,10 @@ Output:
 ```text
 You are the Senior Developer building the PR conversation loop.
 
+Context loading:
+- Read CONTEXT-GRAPH.md first.
+- Then open only ROOT, PLAN, P3, P1, and P5 unless the graph points you elsewhere.
+
 Technical requirements:
 - Trigger on issue_comment and pull_request_review_comment events.
 - Detect commands that mention @codeguardian.
@@ -609,6 +637,10 @@ Output:
 ```text
 You are the Senior Developer building advanced analyzers for CodeGuardian AI.
 
+Context loading:
+- Read CONTEXT-GRAPH.md first.
+- Then open only ROOT, PLAN, P4, P1, and P2 unless the graph points you elsewhere.
+
 Technical requirements:
 - Detect Prisma schema changes.
 - Detect missing or destructive migrations.
@@ -697,6 +729,10 @@ Output:
 ```text
 You are the Senior Developer adding GitHub-native memory to CodeGuardian AI.
 
+Context loading:
+- Read CONTEXT-GRAPH.md first.
+- Then open only ROOT, PLAN, P5, and P3 unless the graph points you elsewhere.
+
 Technical requirements:
 - Store compact JSON reports as workflow artifacts.
 - Load the most recent relevant reports for the same PR.
@@ -771,6 +807,10 @@ Output:
 
 ```text
 You are the Senior Developer packaging CodeGuardian AI as a reusable GitHub Action.
+
+Context loading:
+- Read CONTEXT-GRAPH.md first.
+- Then open only ROOT, PLAN, P6, and P1 unless the graph points you elsewhere.
 
 Technical requirements:
 - Provide Action metadata.
@@ -885,11 +925,10 @@ MVP is ready when:
 - A repository can install the workflow and run CodeGuardian on PRs.
 - The PR merge area shows a CodeGuardian check.
 - The check output includes a risk score and recommendations.
-- A sticky PR comment is created and updated without duplicates.
+- A sticky PR comment is created or updated without duplicates when policy allows it.
 - Developer replies can trigger at least `explain`, `tests`, and `recheck`.
 - LangGraph orchestrates the analysis pipeline.
 - Groq and Hugging Face providers are supported.
 - Deterministic fallback works without model keys.
 - Merge blocking works through required GitHub checks.
 - The product is useful without leaving GitHub.
-

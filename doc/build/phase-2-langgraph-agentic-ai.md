@@ -70,6 +70,10 @@ flowchart TD
 ```text
 You are implementing Phase 2 of CodeGuardian AI.
 
+Context loading:
+- Read CONTEXT-GRAPH.md first.
+- Then open only ROOT, PLAN, P2, and P1 unless the graph points you elsewhere.
+
 Build a LangGraph workflow with these nodes:
 - collect_pr_context
 - repository_context
@@ -142,4 +146,3 @@ For each blocking finding, show:
 - The final check summary is generated from structured state.
 - Every high-risk finding has evidence.
 - Deterministic mode remains available.
-

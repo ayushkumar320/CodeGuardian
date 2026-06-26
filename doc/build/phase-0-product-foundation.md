@@ -31,15 +31,18 @@ flowchart TD
   A["User adds CodeGuardian workflow"] --> B["User opens PR"]
   B --> C["GitHub Action runs"]
   C --> D["CodeGuardian check appears in merge box"]
-  D --> E["Sticky PR comment is created or updated"]
-  E --> F{"Risk level"}
-  F -->|Low| G["Merge allowed"]
-  F -->|Medium| H["Merge allowed with warning"]
-  F -->|High| I["Blocked if policy requires"]
-  F -->|Critical| J["Blocked in guarded and strict modes"]
-  H --> K["User asks @codeguardian tests"]
-  I --> L["User asks @codeguardian why blocked"]
-  J --> L
+  D --> E{"Should comment?"}
+  E -->|Yes| F["Sticky PR comment is created or updated"]
+  E -->|No| G["No PR comment"]
+  F --> H{"Risk level"}
+  G --> H
+  H -->|Low| I["Merge allowed"]
+  H -->|Medium| J["Merge allowed with warning"]
+  H -->|High| K["Blocked if policy requires"]
+  H -->|Critical| L["Blocked in guarded and strict modes"]
+  J --> M["User asks @codeguardian tests"]
+  K --> N["User asks @codeguardian why blocked"]
+  L --> N
 ```
 
 ## Risk Levels
@@ -81,7 +84,11 @@ Produce:
 ```text
 You are the Senior Developer for CodeGuardian AI Phase 0.
 
-Create a technical foundation plan for a GitHub Actions-only PR checker.
+Context loading:
+- Read CONTEXT-GRAPH.md first.
+- Then open only ROOT, PLAN, P0, and WFI unless the graph points you elsewhere.
+
+Create a technical foundation plan for the GitHub Actions-only MVP.
 
 Define:
 1. Repository structure.
@@ -112,4 +119,3 @@ Keep it short.
 - Blocking behavior is explicit.
 - User commands are limited and memorable.
 - The technical team can begin implementation without unresolved product ambiguity.
-

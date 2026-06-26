@@ -38,8 +38,19 @@ flowchart TD
   F --> G["Recommend tests"]
   G --> H["Generate risk report"]
   H --> I["Write GitHub check summary"]
-  H --> J["Update sticky PR comment"]
+  H --> J["Upload report artifacts"]
+  H --> K{"Should comment?"}
+  K -->|Yes| L["Update sticky PR comment"]
+  K -->|No| M["Stay quiet"]
 ```
+
+## Publishing Contract
+
+- The GitHub check answers whether the PR can merge under the current policy.
+- The sticky PR comment explains the short why, only when the run is worth interrupting the PR.
+- The uploaded artifacts contain the full evidence trail for debugging, compare mode, and follow-up commands.
+- Low-risk docs-only changes should still publish a passing check and artifacts, but should skip a long comment by default.
+- Deterministic mode must be clearly labeled when no model provider is configured.
 
 ## Required Inputs
 
@@ -58,7 +69,8 @@ flowchart TD
 - `codeguardian-report.json`
 - `codeguardian-report.md`
 - GitHub check summary.
-- Sticky PR comment.
+- Sticky PR comment when policy allows it.
+- Comment decision metadata.
 - Exit code that can pass or fail required check.
 
 ## Finding Schema
@@ -81,6 +93,10 @@ finding
 ```text
 You are implementing Phase 1 of CodeGuardian AI.
 
+Context loading:
+- Read CONTEXT-GRAPH.md first.
+- Then open only ROOT, PLAN, P1, P2, and WFI unless the graph points you elsewhere.
+
 Build a GitHub Actions PR checker that:
 - Runs on pull_request opened, synchronize, reopened, and ready_for_review.
 - Checks out the repo and fetches the base branch.
@@ -93,6 +109,8 @@ Build a GitHub Actions PR checker that:
 - Creates or updates one sticky PR comment.
 - Uploads report JSON and Markdown artifacts.
 - Works without LLM keys.
+- Skips PR comments for docs-only or low-risk changes unless policy asks for them.
+- Keeps the check summary short and links to artifacts for full evidence.
 
 Return:
 1. File structure.
@@ -144,7 +162,7 @@ Tell me:
 - The check appears in the GitHub PR merge area.
 - The sticky comment updates in place.
 - Docs-only changes produce low-risk output.
+- Docs-only changes do not create noisy long comments by default.
 - High-risk path changes produce visible warnings.
 - The report artifact is uploaded.
 - No LLM key is required for baseline operation.
-

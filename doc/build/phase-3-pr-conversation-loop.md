@@ -30,10 +30,10 @@ sequenceDiagram
   GH->>ACT: issue_comment event
   ACT->>ACT: Parse command and verify permissions
   ACT->>LG: Load latest report artifact
-  LG->>GH: Reply with evidence-based answer
+  LG->>GH: Reply in thread with evidence-based answer
   Dev->>GH: @codeguardian recheck
   GH->>ACT: issue_comment event
-  ACT->>PR: Start fresh analysis workflow
+  ACT->>PR: Dispatch fresh analysis workflow
 ```
 
 ## Command Rules
@@ -43,13 +43,28 @@ sequenceDiagram
 - Replies should be short.
 - Use latest report artifacts when possible.
 - Re-run full analysis only for `recheck`.
+- Use deterministic templates for simple replies when no model key is configured.
 - Suppression requires a reason.
 - Blocking suppression requires maintainer permission.
+- Suppressed findings remain visible in the sticky summary with the user, reason, and scope.
+- Commands should not update the sticky summary unless they change analysis state, such as `recheck` or approved `ignore`.
+
+## Idempotency And Noise Control
+
+- Store the handled GitHub comment ID in the run state or artifact metadata.
+- Do not reply twice to the same command comment.
+- Prefer threaded replies when GitHub supports the source comment type.
+- Keep command replies concise and link back to the latest check or artifact for full evidence.
+- Refuse ambiguous or unsupported commands with a short help response.
 
 ## Senior Developer Prompt
 
 ```text
 You are implementing Phase 3 of CodeGuardian AI.
+
+Context loading:
+- Read CONTEXT-GRAPH.md first.
+- Then open only ROOT, PLAN, P3, P1, and P5 unless the graph points you elsewhere.
 
 Build the GitHub PR comment interaction loop.
 
@@ -63,6 +78,8 @@ Requirements:
 - Reply to the user in GitHub.
 - Avoid duplicate replies for the same comment.
 - Support recheck by triggering the PR analysis workflow.
+- Keep `explain`, `tests`, `why blocked`, and `compare` read-only against the latest artifact.
+- Record approved suppressions with actor, reason, finding ID, and PR scope.
 
 Output:
 1. Event handling design.
@@ -110,6 +127,7 @@ Show the blocking finding, evidence files, and smallest fix.
 - `@codeguardian explain` uses latest report.
 - `@codeguardian tests` returns recommended tests.
 - `@codeguardian recheck` dispatches analysis.
+- `@codeguardian compare` uses current and previous report artifacts.
+- `@codeguardian ignore` requires a reason and maintainer permission for blockers.
 - Duplicate replies are prevented.
 - Maintainer-only actions are protected.
-

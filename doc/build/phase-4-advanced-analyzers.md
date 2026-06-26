@@ -57,6 +57,10 @@ Policy areas:
 ```text
 You are implementing Phase 4 advanced analyzers for CodeGuardian AI.
 
+Context loading:
+- Read CONTEXT-GRAPH.md first.
+- Then open only ROOT, PLAN, P4, P1, and P2 unless the graph points you elsewhere.
+
 Build deterministic analyzers for:
 1. Prisma schema changes.
 2. SQL migration risk.
@@ -117,4 +121,3 @@ Show changed migration or schema files, destructive operations, affected models,
 - Forbidden imports are detected.
 - Test recommendations improve beyond filename matching.
 - Policy file changes alter behavior.
-

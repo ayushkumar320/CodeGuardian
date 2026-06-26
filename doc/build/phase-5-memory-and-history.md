@@ -57,6 +57,10 @@ memory_record
 ```text
 You are implementing Phase 5 memory for CodeGuardian AI.
 
+Context loading:
+- Read CONTEXT-GRAPH.md first.
+- Then open only ROOT, PLAN, P5, and P3 unless the graph points you elsewhere.
+
 Build GitHub-native memory without requiring an external database.
 
 Requirements:
@@ -117,4 +121,3 @@ Show similar PRs, previous outcome, and whether this PR matches the same pattern
 - No secrets are stored in memory.
 - Historical context appears only when useful.
 - Memory can be disabled by policy.
-
