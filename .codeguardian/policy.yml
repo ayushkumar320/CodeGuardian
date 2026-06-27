@@ -1,4 +1,4 @@
-# CodeGuardian policy (Phase 1 subset). Unknown keys are ignored.
+# CodeGuardian policy. Unknown keys are ignored.
 
 # Blocking mode: advisory | guarded | strict.
 # advisory  = never blocks merge (gradual rollout, week 1)
@@ -19,6 +19,14 @@ noise:
   comment_on_medium: true
   allow_inline_annotations: false
   skip_comment_for_docs_only: true
+
+# Architecture rules (Phase 2). A file matching `paths` must not import anything
+# whose import spec contains `cannot_import`.
+architecture:
+  forbidden_imports: []
+    # - paths: "**/components/**"
+    #   cannot_import: "server"
+    #   reason: "UI components must not import server-only code"
 
 # Glob patterns treated as high-risk (raises severity / blast radius).
 high_risk_paths:

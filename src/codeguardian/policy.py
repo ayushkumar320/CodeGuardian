@@ -29,10 +29,21 @@ class NoiseBudget(BaseModel):
     skip_comment_for_docs_only: bool = True
 
 
+class ForbiddenImport(BaseModel):
+    paths: str  # glob of files this rule applies to
+    cannot_import: str  # substring an import spec must not contain
+    reason: str = ""
+
+
+class Architecture(BaseModel):
+    forbidden_imports: list[ForbiddenImport] = Field(default_factory=list)
+
+
 class Policy(BaseModel):
     mode: Mode = Mode.advisory  # gradual rollout: advisory first
     thresholds: Thresholds = Field(default_factory=Thresholds)
     noise: NoiseBudget = Field(default_factory=NoiseBudget)
+    architecture: Architecture = Field(default_factory=Architecture)
     high_risk_paths: list[str] = Field(
         default_factory=lambda: [
             "**/migrations/**",
@@ -58,5 +69,5 @@ class Policy(BaseModel):
 
 
 def _pick_known(data: dict) -> dict:
-    known = {"mode", "thresholds", "noise", "high_risk_paths"}
+    known = {"mode", "thresholds", "noise", "architecture", "high_risk_paths"}
     return {k: v for k, v in data.items() if k in known}

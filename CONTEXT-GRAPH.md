@@ -4,7 +4,7 @@ A compact **concept → location** memory graph for CodeGuardian AI. Purpose: fi
 the right doc/section without reading every file. Read this first; then open only
 the one `doc/...:Section` a node points to.
 
-- **Repo state:** Phase 0 + Phase 1 implemented. Code under `src/codeguardian/`.
+- **Repo state:** Phase 0 + Phase 1 + Phase 2 implemented. Code under `src/codeguardian/`.
   Stack is **Python + LangGraph** (committed; overrides the docs' TypeScript
   recommendation).
 - **Authority:** for MVP conflicts, the build plan + phase docs override the
@@ -76,20 +76,21 @@ Pick the topic, open only the listed target.
 | Prompt-injection and untrusted repo text rules | WFI §19 ; PLAN "Prompt Safety Rules" ; ROOT "Strict rules" |
 | Build prompt token-saving rules | This file, "Build prompt preflight" |
 
-## Code map (Phase 1)
+## Code map (Phase 1–2)
 
 Python package at `src/codeguardian/`. Stack: Python + LangGraph + Pydantic.
 
 | If you need… | Go to |
 |---|---|
-| Data contracts (Finding/Report/PrContext/enums) | `src/codeguardian/models.py` |
-| Policy file loader + defaults (modes, thresholds, noise) | `src/codeguardian/policy.py` |
+| Data contracts (Finding/Report/PrContext/RepositoryContext/enums) | `src/codeguardian/models.py` |
+| Policy loader + defaults (modes, thresholds, noise, architecture rules) | `src/codeguardian/policy.py` |
 | PR diff from git / file classification | `src/codeguardian/pr/diff.py`, `pr/classify.py` |
 | Deterministic analyzers (import blast radius, missing tests) | `src/codeguardian/analyzers/imports.py`, `analyzers/tests.py` |
+| Deterministic analyzers (API contract, DB/migration, architecture) | `src/codeguardian/analyzers/api.py`, `analyzers/database.py`, `analyzers/architecture.py` |
 | Risk scoring (confidence-weighted aggregate) | `src/codeguardian/scoring.py` |
-| Provider router Groq→HF→deterministic | `src/codeguardian/providers.py` |
+| Provider router Groq→HF→deterministic + output schema validation | `src/codeguardian/providers.py` (`validate_summary`) |
 | Secret redaction / untrusted-text fencing | `src/codeguardian/security.py` |
-| LangGraph state / nodes / graph builder | `src/codeguardian/graph/state.py`, `graph/nodes.py`, `graph/build.py` |
+| LangGraph state (reducers) / entry+context nodes / domain+synthesis agents / builder | `src/codeguardian/graph/state.py`, `graph/nodes.py`, `graph/agents.py`, `graph/build.py` |
 | Check summary / sticky comment / artifacts | `src/codeguardian/report.py` |
 | GitHub event parsing + REST client | `src/codeguardian/github/events.py`, `github/client.py` |
 | Action entrypoint (publish + exit code) | `src/codeguardian/__main__.py` |

@@ -68,6 +68,15 @@ class Provider(str, Enum):
     deterministic = "deterministic"
 
 
+class RepositoryContext(BaseModel):
+    """Lightweight repo understanding gathered before the domain agents run."""
+
+    language_summary: dict[str, int] = Field(default_factory=dict)  # ext -> file count
+    framework_summary: list[str] = Field(default_factory=list)
+    package_manifests: list[str] = Field(default_factory=list)
+    test_files: list[str] = Field(default_factory=list)
+
+
 class PrContext(BaseModel):
     owner: str
     repo: str

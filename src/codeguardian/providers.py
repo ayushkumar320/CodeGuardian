@@ -50,17 +50,38 @@ def summarize(report: Report, env: Optional[dict] = None) -> SummaryResult:
     prompt = _build_prompt(report)
 
     if provider == Provider.groq:
-        text = _try_groq(prompt, env)
+        text = validate_summary(_try_groq(prompt, env))
         if text:
             return SummaryResult(text, Provider.groq)
         provider = Provider.huggingface if env.get("HF_TOKEN") else Provider.deterministic
 
     if provider == Provider.huggingface:
-        text = _try_hf(prompt, env)
+        text = validate_summary(_try_hf(prompt, env))
         if text:
             return SummaryResult(text, Provider.huggingface)
 
     return SummaryResult(deterministic_summary(report), Provider.deterministic)
+
+
+def validate_summary(raw: Optional[str]) -> Optional[str]:
+    """Validate model output against the expected schema: a JSON object with a
+    non-empty string ``summary``. Any deviation returns None so the caller falls
+    through to the next provider / deterministic template (strict rule: validate
+    every model response; invalid output never reaches the user).
+    """
+    if not raw:
+        return None
+    start, end = raw.find("{"), raw.rfind("}")
+    if start == -1 or end == -1 or end < start:
+        return None
+    try:
+        obj = json.loads(raw[start : end + 1])
+    except ValueError:
+        return None
+    summary = obj.get("summary") if isinstance(obj, dict) else None
+    if isinstance(summary, str) and summary.strip():
+        return summary.strip()
+    return None
 
 
 def deterministic_summary(report: Report) -> str:
@@ -89,7 +110,8 @@ def _build_prompt(report: Report) -> str:
     }
     system = (
         "You are CodeGuardian. Summarize this PR merge risk in 2-3 sentences for a "
-        "developer. Use ONLY the structured facts provided. Do not invent findings."
+        "developer. Use ONLY the structured facts provided. Do not invent findings. "
+        'Respond with a JSON object of the exact form {"summary": "..."} and nothing else.'
     )
     return f"{system}\n\n{wrap_untrusted(json.dumps(facts, indent=2))}"
 

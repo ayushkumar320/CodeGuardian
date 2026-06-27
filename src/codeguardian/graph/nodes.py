@@ -1,27 +1,16 @@
-"""LangGraph node functions for the Phase 1 pipeline.
+"""Entry / context LangGraph nodes (Phase 2).
 
-Order: collect_pr_context -> classify_changes -> dependency_scan ->
-test_recommendation -> risk_score -> llm_summarize -> publish_result.
-
-Deterministic nodes own all evidence; llm_summarize only rephrases. Each node
-returns a partial state dict that LangGraph merges.
+collect_pr_context loads the diff; repository_context builds a lightweight repo
+understanding (languages, frameworks, manifests, tests) the domain agents share.
+Domain + synthesis agents live in agents.py.
 """
 
 from __future__ import annotations
 
-from .. import ANALYZER_VERSION
-from ..analyzers import imports as imports_analyzer
-from ..analyzers import tests as tests_analyzer
-from ..models import (
-    FileCategory,
-    Mode,
-    Provider,
-    Report,
-)
-from ..pr.classify import is_docs_only
+import os
+
+from ..models import FileCategory, RepositoryContext
 from ..pr.diff import compute_diff
-from ..providers import deterministic_summary, summarize
-from ..scoring import score
 from .state import CodeGuardianState
 
 _AREA_BY_CATEGORY = {
@@ -31,81 +20,68 @@ _AREA_BY_CATEGORY = {
     FileCategory.config: "Config",
     FileCategory.types: "Shared types",
     FileCategory.test: "Tests",
-    FileCategory.docs: "Docs",
 }
+
+_CODE_EXT = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".py", ".css", ".scss")
+_SKIP_DIRS = {".git", "node_modules", "dist", "build", ".next", ".venv"}
 
 
 def collect_pr_context(state: CodeGuardianState) -> dict:
     pr = state["pr"]
     files = compute_diff(state["repo_root"], pr.base_sha, pr.head_sha)
-    return {"diff": files, "errors": state.get("errors", [])}
-
-
-def classify_changes(state: CodeGuardianState) -> dict:
     areas = sorted(
         {
             _AREA_BY_CATEGORY[f.category]
-            for f in state.get("diff", [])
+            for f in files
             if f.category in _AREA_BY_CATEGORY and f.category != FileCategory.docs
         }
     )
-    return {"affected_areas": areas}
+    return {"diff": files, "affected_areas": areas}
 
 
-def dependency_scan(state: CodeGuardianState) -> dict:
-    diff = state.get("diff", [])
-    if is_docs_only([f.category for f in diff]):
-        return {"evidence": state.get("evidence", [])}
-    findings = imports_analyzer.analyze(
-        state["repo_root"], diff, state["policy"].high_risk_paths
-    )
-    return {"evidence": state.get("evidence", []) + findings}
+def repository_context(state: CodeGuardianState) -> dict:
+    root = state["repo_root"]
+    langs: dict[str, int] = {}
+    manifests: list[str] = []
+    tests: list[str] = []
+    frameworks: set[str] = set()
 
+    for dirpath, dirs, files in os.walk(root):
+        dirs[:] = [d for d in dirs if d not in _SKIP_DIRS]
+        for fn in files:
+            rel = os.path.relpath(os.path.join(dirpath, fn), root).replace(os.sep, "/")
+            ext = os.path.splitext(fn)[1].lower()
+            if ext in _CODE_EXT:
+                langs[ext] = langs.get(ext, 0) + 1
+            if fn == "package.json":
+                manifests.append(rel)
+                frameworks |= _frameworks_from_manifest(os.path.join(dirpath, fn))
+            if fn.lower().endswith("schema.prisma"):
+                frameworks.add("prisma")
+            if ".test." in fn or ".spec." in fn or "__tests__/" in rel:
+                tests.append(rel)
 
-def test_recommendation(state: CodeGuardianState) -> dict:
-    diff = state.get("diff", [])
-    if is_docs_only([f.category for f in diff]):
-        return {"evidence": state.get("evidence", [])}
-    findings = tests_analyzer.analyze(state["repo_root"], diff)
-    return {"evidence": state.get("evidence", []) + findings}
-
-
-def risk_score(state: CodeGuardianState) -> dict:
-    policy = state["policy"]
-    findings = state.get("evidence", [])
-    risk = score(findings, policy)
-    actions: list[str] = []
-    for f in sorted(findings, key=lambda x: x.confidence, reverse=True):
-        for a in f.recommended_actions:
-            if a != "No action required" and a not in actions:
-                actions.append(a)
-
-    report = Report(
-        pr=state["pr"],
-        mode=policy.mode,
-        provider=Provider.deterministic,  # updated in llm_summarize
-        risk=risk,
-        affected_areas=state.get("affected_areas", []),
-        findings=findings,
-        actions=actions,
-        dedupe_key=_dedupe_key(state),
-    )
-    return {"report": report}
-
-
-def llm_summarize(state: CodeGuardianState) -> dict:
-    report = state["report"]
-    result = summarize(report)
-    report.provider = result.provider
-    if result.provider == Provider.deterministic:
-        report.deterministic_notice = (
-            "CodeGuardian ran in deterministic mode because no model provider "
-            "token was configured. Risk score and recommendations are based on "
-            "static analysis only."
+    return {
+        "repository": RepositoryContext(
+            language_summary=langs,
+            framework_summary=sorted(frameworks),
+            package_manifests=manifests[:20],
+            test_files=tests[:200],
         )
-    return {"report": report, "narrative": result.text}
+    }
 
 
-def _dedupe_key(state: CodeGuardianState) -> str:
-    pr = state["pr"]
-    return f"{pr.owner}/{pr.repo}#{pr.number}@{pr.head_sha}:{ANALYZER_VERSION}"
+def _frameworks_from_manifest(path: str) -> set[str]:
+    import json
+
+    found: set[str] = set()
+    try:
+        with open(path, "r", encoding="utf-8", errors="ignore") as fh:
+            data = json.load(fh)
+    except (OSError, ValueError):
+        return found
+    deps = {**data.get("dependencies", {}), **data.get("devDependencies", {})}
+    for name, marker in (("next", "next"), ("react", "react"), ("express", "express")):
+        if name in deps:
+            found.add(marker)
+    return found
