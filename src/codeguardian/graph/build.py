@@ -20,6 +20,7 @@ _DOMAIN_AGENTS = [
     ("api_contract_agent", agents.api_contract_agent),
     ("database_agent", agents.database_agent),
     ("architecture_agent", agents.architecture_agent),
+    ("types_agent", agents.types_agent),
 ]
 
 

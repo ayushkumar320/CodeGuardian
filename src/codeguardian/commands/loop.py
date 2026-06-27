@@ -47,7 +47,7 @@ def plan(command: Command, reports: list[Report], author_association: str | None
         return Outcome(reply=handlers.NO_REPORT)
 
     if name == CommandName.explain:
-        return Outcome(reply=handlers.explain(latest))
+        return Outcome(reply=handlers.explain(latest, command.category))
     if name == CommandName.tests:
         return Outcome(reply=handlers.tests(latest))
     if name == CommandName.why_blocked:

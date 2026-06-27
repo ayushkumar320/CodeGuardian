@@ -16,12 +16,14 @@ from __future__ import annotations
 from typing import Callable
 
 from .. import ANALYZER_VERSION
+from ..globs import glob_match
 from ..analyzers import api as api_analyzer
 from ..analyzers import architecture as arch_analyzer
 from ..analyzers import database as db_analyzer
 from ..analyzers import imports as imports_analyzer
 from ..analyzers import tests as tests_analyzer
-from ..models import Finding, Provider, Report
+from ..analyzers import types as types_analyzer
+from ..models import Finding, Provider, Report, Suppression
 from ..pr.classify import is_docs_only
 from ..providers import summarize
 from ..scoring import score
@@ -55,7 +57,18 @@ def dependency_agent(state: CodeGuardianState) -> dict:
 def test_impact_agent(state: CodeGuardianState) -> dict:
     if _skip_docs_only(state):
         return {}
-    return _safe("test", lambda: tests_analyzer.analyze(state["repo_root"], state["diff"]))
+    return _safe(
+        "test",
+        lambda: tests_analyzer.analyze(
+            state["repo_root"], state["diff"], state["policy"].test_suite_mappings
+        ),
+    )
+
+
+def types_agent(state: CodeGuardianState) -> dict:
+    if _skip_docs_only(state):
+        return {}
+    return _safe("types", lambda: types_analyzer.analyze(state["repo_root"], state["diff"]))
 
 
 def api_contract_agent(state: CodeGuardianState) -> dict:
@@ -85,13 +98,24 @@ def architecture_agent(state: CodeGuardianState) -> dict:
 def risk_scoring_agent(state: CodeGuardianState) -> dict:
     policy = state["policy"]
     findings = state.get("evidence", [])
+
+    # Policy-level pre-suppression (ignored_findings) — kept visible, excluded
+    # from the score (scoring ignores suppressed findings).
+    ignored = set(policy.ignored_findings)
+    for f in findings:
+        if f.id in ignored and f.suppressed is None:
+            f.suppressed = Suppression(by="policy", reason="listed in policy.ignored_findings")
+
     risk = score(findings, policy)
 
     actions: list[str] = []
-    for f in sorted(findings, key=lambda x: x.confidence, reverse=True):
+    for f in sorted((x for x in findings if x.suppressed is None),
+                    key=lambda x: x.confidence, reverse=True):
         for a in f.recommended_actions:
             if a != "No action required" and a not in actions:
                 actions.append(a)
+
+    reviewers = _reviewers(findings, policy)
 
     pr = state["pr"]
     report = Report(
@@ -102,9 +126,22 @@ def risk_scoring_agent(state: CodeGuardianState) -> dict:
         affected_areas=state.get("affected_areas", []),
         findings=findings,
         actions=actions,
+        reviewers=reviewers,
         dedupe_key=f"{pr.owner}/{pr.repo}#{pr.number}@{pr.head_sha}:{ANALYZER_VERSION}",
     )
     return {"report": report}
+
+
+def _reviewers(findings: list[Finding], policy) -> list[str]:
+    """Suggest owners for the paths flagged by active findings (WFI §16)."""
+    paths = {ev for f in findings if f.suppressed is None for ev in f.evidence_files}
+    out: list[str] = []
+    for rule in policy.service_owners:
+        if any(glob_match(p, rule.paths) for p in paths):
+            for owner in rule.owners:
+                if owner not in out:
+                    out.append(owner)
+    return out
 
 
 def recommendation_agent(state: CodeGuardianState) -> dict:

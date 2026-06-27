@@ -33,11 +33,21 @@ class CommandName(str, Enum):
     unknown = "unknown"
 
 
+_CATEGORY_ALIASES = {
+    "database": "database", "db": "database",
+    "api": "api",
+    "architecture": "architecture", "arch": "architecture",
+    "test": "test", "tests": "test",
+    "dependency": "dependency", "deps": "dependency", "type": "dependency", "types": "dependency",
+}
+
+
 @dataclass
 class Command:
     name: CommandName
     finding_id: Optional[str] = None
     reason: Optional[str] = None
+    category: Optional[str] = None  # for `explain <category> risk`
     raw: str = ""
 
     @property
@@ -68,7 +78,13 @@ def parse(body: str) -> Optional[Command]:
             return Command(CommandName.ignore, finding_id=m.group("id"), reason=reason, raw=after)
         return Command(CommandName.ignore, raw=after)
 
-    first = low.split()[0] if low.split() else ""
+    tokens = low.split()
+    first = tokens[0] if tokens else ""
+
+    if first == "explain":
+        category = next((_CATEGORY_ALIASES[t] for t in tokens[1:] if t in _CATEGORY_ALIASES), None)
+        return Command(CommandName.explain, category=category, raw=after)
+
     simple = {
         "help": CommandName.help,
         "explain": CommandName.explain,

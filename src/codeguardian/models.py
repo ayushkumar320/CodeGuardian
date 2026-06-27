@@ -144,6 +144,7 @@ class Report(BaseModel):
     affected_areas: list[str] = Field(default_factory=list)
     findings: list[Finding] = Field(default_factory=list)
     actions: list[str] = Field(default_factory=list)
+    reviewers: list[str] = Field(default_factory=list)
     dedupe_key: str = ""
     deterministic_notice: Optional[str] = None
 

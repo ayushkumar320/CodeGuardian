@@ -1,13 +1,15 @@
-"""Basic architecture-rule analysis (deterministic).
+"""Architecture-rule analysis (deterministic).
 
-Phase 2 baseline: enforce policy `forbidden_imports` rules — a file matching a
-rule's `paths` glob must not import anything whose spec contains `cannot_import`.
-Layer-direction and circular-dependency detection are Phase 4.
+Three checks, all driven by policy:
+1. forbidden_imports — a file matching `paths` must not import a spec containing
+   `cannot_import`.
+2. layers — a file in layer L may only import files in `may_import` layers.
+3. circular dependencies — cycles in the local import graph that involve a
+   changed file.
 """
 
 from __future__ import annotations
 
-import fnmatch
 import os
 
 from ..models import (
@@ -17,53 +19,116 @@ from ..models import (
     Finding,
     Severity,
 )
-from ..policy import Architecture
-from .imports import _IMPORT_RE  # reuse the same import matcher
+from ..globs import glob_match
+from ..policy import Architecture, Layer
+from .imports import _IMPORT_RE, build_forward_imports
 
 _CODE_EXT = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs")
 
 
-def analyze(repo_root: str, changed: list[DiffFile], arch: Architecture) -> list[Finding]:
-    if not arch.forbidden_imports:
+def _read_specs(repo_root: str, rel: str) -> list[str]:
+    full = os.path.join(repo_root, rel)
+    if not os.path.isfile(full):
         return []
+    try:
+        with open(full, "r", encoding="utf-8", errors="ignore") as fh:
+            return _IMPORT_RE.findall(fh.read())
+    except OSError:
+        return []
+
+
+def _layer_of(path: str, layers: list[Layer]) -> Layer | None:
+    for layer in layers:
+        if glob_match(path, layer.paths):
+            return layer
+    return None
+
+
+def analyze(repo_root: str, changed: list[DiffFile], arch: Architecture) -> list[Finding]:
     findings: list[Finding] = []
-    idx = 1
-    for f in changed:
+    idx = [1]  # mutable counter shared by helpers
+
+    def add(path, title, summary, action):
+        findings.append(
+            Finding(
+                id=f"CG-ARCH-{idx[0]:03d}",
+                category=Category.architecture,
+                severity=Severity.high,
+                confidence=0.8,
+                title=title,
+                summary=summary,
+                evidence_files=[path] if isinstance(path, str) else path,
+                recommended_actions=[action],
+                blocking=Blocking(guarded=True, strict=True),
+            )
+        )
+        idx[0] += 1
+
+    code_changed = [f for f in changed if f.path.replace(os.sep, "/").endswith(_CODE_EXT)]
+
+    # 1 + 2 need each changed file's import specs.
+    for f in code_changed:
         norm = f.path.replace(os.sep, "/")
-        if not norm.endswith(_CODE_EXT):
-            continue
-        full = os.path.join(repo_root, f.path)
-        if not os.path.isfile(full):
-            continue
-        try:
-            with open(full, "r", encoding="utf-8", errors="ignore") as fh:
-                specs = _IMPORT_RE.findall(fh.read())
-        except OSError:
-            continue
+        specs = _read_specs(repo_root, norm)
+
         for rule in arch.forbidden_imports:
-            if not fnmatch.fnmatch(norm.lower(), rule.paths.lower()):
+            if not glob_match(norm, rule.paths):
                 continue
             bad = [s for s in specs if rule.cannot_import.lower() in s.lower()]
-            if not bad:
+            if bad:
+                add(norm, f"Forbidden import in {norm}",
+                    f"{norm} imports '{bad[0]}' (rule: {rule.paths} cannot import "
+                    f"{rule.cannot_import}). {rule.reason}".strip(),
+                    f"Remove the dependency on '{rule.cannot_import}' from {norm}")
+
+    # 2. Layer-direction violations (need resolved targets -> forward graph).
+    if arch.layers:
+        forward = build_forward_imports(repo_root)
+        for f in code_changed:
+            norm = f.path.replace(os.sep, "/")
+            src_layer = _layer_of(norm, arch.layers)
+            if src_layer is None or not src_layer.may_import:
                 continue
-            findings.append(
-                Finding(
-                    id=f"CG-ARCH-{idx:03d}",
-                    category=Category.architecture,
-                    severity=Severity.high,
-                    confidence=0.8,
-                    title=f"Forbidden import in {norm}",
-                    summary=(
-                        f"{norm} imports '{bad[0]}' which violates rule "
-                        f"'{rule.paths} cannot import {rule.cannot_import}'."
-                        + (f" {rule.reason}" if rule.reason else "")
-                    ),
-                    evidence_files=[norm],
-                    recommended_actions=[
-                        f"Remove the dependency on '{rule.cannot_import}' from {norm}",
-                    ],
-                    blocking=Blocking(guarded=True, strict=True),
-                )
-            )
-            idx += 1
+            allowed = set(src_layer.may_import) | {src_layer.name}
+            for target in sorted(forward.get(norm, set())):
+                tgt_layer = _layer_of(target, arch.layers)
+                if tgt_layer and tgt_layer.name not in allowed:
+                    add([norm, target],
+                        f"Layer violation: {src_layer.name} → {tgt_layer.name}",
+                        f"{norm} (layer '{src_layer.name}') imports {target} "
+                        f"(layer '{tgt_layer.name}'), which is not in may_import.",
+                        f"Invert the dependency or route it through an allowed layer")
+
+    # 3. Circular dependencies involving a changed file.
+    if arch.detect_circular and code_changed:
+        forward = build_forward_imports(repo_root)
+        changed_set = {f.path.replace(os.sep, "/") for f in code_changed}
+        seen_cycles: set[frozenset] = set()
+        for start in changed_set:
+            cycle = _find_cycle(start, forward)
+            if cycle:
+                key = frozenset(cycle)
+                if key in seen_cycles:
+                    continue
+                seen_cycles.add(key)
+                add(cycle,
+                    f"Circular dependency involving {start}",
+                    "Import cycle: " + " → ".join(cycle + [cycle[0]]),
+                    "Break the cycle by extracting shared code or inverting a dependency")
     return findings
+
+
+def _find_cycle(start: str, forward: dict[str, set[str]]) -> list[str] | None:
+    """Return a cycle path starting and ending at `start`, or None. DFS bounded
+    to nodes reachable from start."""
+    stack = [(start, [start])]
+    visited: set[str] = set()
+    while stack:
+        node, path = stack.pop()
+        for nxt in forward.get(node, ()):
+            if nxt == start and len(path) > 1:
+                return path
+            if nxt not in visited and nxt not in path:
+                visited.add(nxt)
+                stack.append((nxt, path + [nxt]))
+    return None

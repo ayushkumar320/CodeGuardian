@@ -35,8 +35,26 @@ class ForbiddenImport(BaseModel):
     reason: str = ""
 
 
+class Layer(BaseModel):
+    name: str
+    paths: str  # glob identifying files that belong to this layer
+    may_import: list[str] = Field(default_factory=list)  # allowed layer names; empty = any
+
+
 class Architecture(BaseModel):
     forbidden_imports: list[ForbiddenImport] = Field(default_factory=list)
+    layers: list[Layer] = Field(default_factory=list)
+    detect_circular: bool = True
+
+
+class TestSuite(BaseModel):
+    paths: str  # glob of source files
+    suite: str  # suite name / command to run
+
+
+class ServiceOwner(BaseModel):
+    paths: str  # glob
+    owners: list[str]  # e.g. ["@platform/db"]
 
 
 class Policy(BaseModel):
@@ -44,6 +62,9 @@ class Policy(BaseModel):
     thresholds: Thresholds = Field(default_factory=Thresholds)
     noise: NoiseBudget = Field(default_factory=NoiseBudget)
     architecture: Architecture = Field(default_factory=Architecture)
+    test_suite_mappings: list[TestSuite] = Field(default_factory=list)
+    service_owners: list[ServiceOwner] = Field(default_factory=list)
+    ignored_findings: list[str] = Field(default_factory=list)  # finding IDs pre-suppressed
     high_risk_paths: list[str] = Field(
         default_factory=lambda: [
             "**/migrations/**",
@@ -69,5 +90,8 @@ class Policy(BaseModel):
 
 
 def _pick_known(data: dict) -> dict:
-    known = {"mode", "thresholds", "noise", "architecture", "high_risk_paths"}
+    known = {
+        "mode", "thresholds", "noise", "architecture", "test_suite_mappings",
+        "service_owners", "ignored_findings", "high_risk_paths",
+    }
     return {k: v for k, v in data.items() if k in known}

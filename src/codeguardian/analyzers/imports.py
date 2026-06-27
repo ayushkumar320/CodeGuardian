@@ -67,6 +67,25 @@ def build_reverse_imports(repo_root: str) -> dict[str, set[str]]:
     return reverse
 
 
+def build_forward_imports(repo_root: str) -> dict[str, set[str]]:
+    """Map each file -> set of local files it imports."""
+    files = _iter_code_files(repo_root)
+    fileset = set(f.replace(os.sep, "/") for f in files)
+    forward: dict[str, set[str]] = {f: set() for f in fileset}
+    for f in files:
+        try:
+            with open(os.path.join(repo_root, f), "r", encoding="utf-8", errors="ignore") as fh:
+                text = fh.read()
+        except OSError:
+            continue
+        importer = f.replace(os.sep, "/")
+        for spec in _IMPORT_RE.findall(text):
+            target = _resolve(importer, spec, fileset)
+            if target:
+                forward[importer].add(target)
+    return forward
+
+
 def analyze(
     repo_root: str, changed: list[DiffFile], high_risk_paths: list[str]
 ) -> list[Finding]:

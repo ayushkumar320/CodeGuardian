@@ -20,13 +20,33 @@ noise:
   allow_inline_annotations: false
   skip_comment_for_docs_only: true
 
-# Architecture rules (Phase 2). A file matching `paths` must not import anything
-# whose import spec contains `cannot_import`.
+# Architecture rules.
 architecture:
+  detect_circular: true
   forbidden_imports: []
     # - paths: "**/components/**"
     #   cannot_import: "server"
     #   reason: "UI components must not import server-only code"
+  layers: []
+    # - name: ui
+    #   paths: "**/ui/**"
+    #   may_import: ["shared"]      # ui may only import shared (+ itself)
+    # - name: data
+    #   paths: "**/data/**"
+
+# Map source paths to the test suite a reviewer should run.
+test_suite_mappings: []
+  # - paths: "**/billing/**"
+  #   suite: "billing-integration"
+
+# Suggest reviewers for changes under certain paths (read alongside CODEOWNERS).
+service_owners: []
+  # - paths: "**/prisma/**"
+  #   owners: ["@platform/db"]
+
+# Finding IDs to pre-suppress (kept visible in the summary, excluded from score).
+ignored_findings: []
+  # - CG-DB-002
 
 # Glob patterns treated as high-risk (raises severity / blast radius).
 high_risk_paths:

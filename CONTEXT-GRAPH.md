@@ -4,7 +4,7 @@ A compact **concept → location** memory graph for CodeGuardian AI. Purpose: fi
 the right doc/section without reading every file. Read this first; then open only
 the one `doc/...:Section` a node points to.
 
-- **Repo state:** Phase 0–3 implemented. Code under `src/codeguardian/`.
+- **Repo state:** Phase 0–4 implemented. Code under `src/codeguardian/`.
   Stack is **Python + LangGraph** (committed; overrides the docs' TypeScript
   recommendation).
 - **Authority:** for MVP conflicts, the build plan + phase docs override the
@@ -76,7 +76,7 @@ Pick the topic, open only the listed target.
 | Prompt-injection and untrusted repo text rules | WFI §19 ; PLAN "Prompt Safety Rules" ; ROOT "Strict rules" |
 | Build prompt token-saving rules | This file, "Build prompt preflight" |
 
-## Code map (Phase 1–3)
+## Code map (Phase 1–4)
 
 Python package at `src/codeguardian/`. Stack: Python + LangGraph + Pydantic.
 
@@ -84,6 +84,12 @@ Python package at `src/codeguardian/`. Stack: Python + LangGraph + Pydantic.
 |---|---|
 | `@codeguardian` command parser / permissions / reply handlers / plan logic | `src/codeguardian/commands/parser.py`, `commands/permissions.py`, `commands/handlers.py`, `commands/loop.py` |
 | Comment-event parsing / artifact retrieval / reply idempotency / get_pull | `src/codeguardian/github/events.py` (`parse_comment_event`), `github/client.py` (`latest_reports`, `already_replied`, `get_pull`) |
+| Shared-type breakage analyzer | `src/codeguardian/analyzers/types.py` |
+| Deep DB (Prisma field/model removal, destructive SQL) / API spec drift / layers+cycles | `analyzers/database.py`, `analyzers/api.py`, `analyzers/architecture.py` |
+| Import graph (forward + reverse) | `src/codeguardian/analyzers/imports.py` (`build_forward_imports`, `build_reverse_imports`) |
+| Glob matching with `**/` semantics | `src/codeguardian/globs.py` (`glob_match`, `matches_any`) |
+| Policy: layers / test-suite maps / service owners / ignored findings | `src/codeguardian/policy.py` |
+| ignored_findings pre-suppression + reviewer suggestions | `src/codeguardian/graph/agents.py` (`risk_scoring_agent`, `_reviewers`) |
 | Data contracts (Finding/Report/PrContext/RepositoryContext/enums) | `src/codeguardian/models.py` |
 | Policy loader + defaults (modes, thresholds, noise, architecture rules) | `src/codeguardian/policy.py` |
 | PR diff from git / file classification | `src/codeguardian/pr/diff.py`, `pr/classify.py` |

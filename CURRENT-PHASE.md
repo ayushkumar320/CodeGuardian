@@ -13,19 +13,20 @@ Quick reference for where the build is. Update this when a phase ships.
 | P0 | Product contract | ✅ done — [doc/build/phase-0-product-contract.md](doc/build/phase-0-product-contract.md) |
 | P1 | GitHub Actions PR checker MVP | ✅ done — code under `src/codeguardian/` |
 | P2 | LangGraph agentic AI (per-domain agents) | ✅ done — parallel agent graph, API/DB/arch analyzers |
-| P3 | `@codeguardian` PR conversation loop | ✅ done — command parser, handlers, recheck/ignore, 36 tests green |
-| **P4** | **DB / API / architecture analyzers (deep) + policy** | **▶ NEXT — start here** |
-| P5 | GitHub-native memory & history | ⬜ pending |
+| P3 | `@codeguardian` PR conversation loop | ✅ done — command parser, handlers, recheck/ignore |
+| P4 | DB / API / architecture analyzers (deep) + policy | ✅ done — types/layers/cycles/spec-drift, richer policy, 48 tests green |
+| **P5** | **GitHub-native memory & history** | **▶ NEXT — start here** |
 | P6 | Packaging, distribution, adoption | ⬜ pending |
 
-## Next up: Phase 4 — deep DB / API / architecture analysis
+## Next up: Phase 5 — memory & historical learning
 
-Expand the Phase 2 baseline analyzers into the product's strongest risk categories.
+Add GitHub-native engineering memory without an external database.
 
-- **Read first:** CONTEXT-GRAPH.md → then ROOT, PLAN, P4, P1, P2.
-- **Goal:** real Prisma schema diff + destructive-migration detection; API
-  request/response shape diffing (incl. OpenAPI/GraphQL when specs exist);
-  shared-types breakage; layer-direction + circular-dep architecture rules;
-  richer `.codeguardian/policy.yml` (layers, service owners, test-suite maps,
-  ignored findings). Every finding still cites evidence into the agent state.
-- **Keep working:** deterministic without LLMs, zero-key path.
+- **Read first:** CONTEXT-GRAPH.md → then ROOT, PLAN, P5, P3.
+- **Goal:** persist compact memory records per run (alongside report artifacts);
+  retrieve prior records for the current PR and similar past PRs (by path/
+  category/keyword; HF embeddings only if configured, else keyword/path match);
+  feed historical matches into the LangGraph state for a Historical Knowledge
+  signal; power `@codeguardian compare` / "has this happened before?". Never
+  store secrets or large code chunks. Memory disableable by policy.
+- **Keep working:** zero-key path, quiet defaults, evidence-cited output.

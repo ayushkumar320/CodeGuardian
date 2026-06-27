@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import fnmatch
-
+from ..globs import matches_any  # re-exported for callers
 from ..models import FileCategory
 
 _DOCS_EXT = (".md", ".mdx", ".rst", ".txt")
@@ -42,11 +41,6 @@ def classify(path: str) -> FileCategory:
     if p.endswith(_BACKEND_EXT):
         return FileCategory.backend
     return FileCategory.other
-
-
-def matches_any(path: str, patterns: list[str]) -> bool:
-    p = path.lower()
-    return any(fnmatch.fnmatch(p, pat.lower()) for pat in patterns)
 
 
 def is_docs_only(categories: list[FileCategory]) -> bool:

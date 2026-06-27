@@ -33,8 +33,20 @@ def _level(report: Report) -> str:
     return f"{report.risk.score}/10 {report.risk.level.value}"
 
 
-def explain(report: Report) -> str:
+def explain(report: Report, category: Optional[str] = None) -> str:
     active = report.active_findings()
+    if category:
+        active = [f for f in active if f.category.value == category]
+        if not active:
+            return f"No {category} findings in this PR."
+        lines = [f"**{category.title()} risk** (overall {_level(report)}):", "", "Findings:"]
+        for f in active[:5]:
+            lines.append(
+                f"- `{f.id}` {f.severity.value} — {f.title}\n"
+                f"  Evidence: {', '.join(f.evidence_files[:5])}\n"
+                f"  Action: {(f.recommended_actions or ['—'])[0]}"
+            )
+        return "\n".join(lines)
     if not active:
         return f"Risk {_level(report)}. No findings — this looks safe to merge."
     lines = [
