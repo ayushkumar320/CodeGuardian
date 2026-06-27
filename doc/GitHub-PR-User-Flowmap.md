@@ -2,11 +2,14 @@
 
 This document describes how a developer experiences CodeGuardian AI directly inside GitHub, especially on the pull request page near the merge/checks area.
 
-The goal is for CodeGuardian to feel native to GitHub: a clear check, a concise risk summary, and merge guidance at the exact moment a developer is deciding whether a PR is safe.
+The goal is for CodeGuardian to feel native to GitHub: a clear check, a concise
+risk summary, and merge guidance at the exact moment a developer is deciding
+whether a PR is safe.
 
 ## Product Principle
 
-CodeGuardian should not force developers into a separate dashboard for routine use.
+CodeGuardian should not force developers into a separate dashboard for routine
+use.
 
 The default workflow should happen inside GitHub:
 
@@ -17,30 +20,30 @@ The default workflow should happen inside GitHub:
 - Developer acts on recommended tests, reviews, or fixes.
 - GitHub allows or blocks merge based on configured policy.
 
-The dashboard is for deeper investigation, team settings, policies, graph exploration, billing, and long-term analytics. The PR page is the primary product surface.
+The PR page is the product surface. A separate dashboard is not part of the
+current product direction.
 
 ## Guided User Flow
 
 ```mermaid
 flowchart TD
-  A["Developer installs CodeGuardian GitHub App"] --> B["Select repositories"]
-  B --> C["Choose policy mode"]
-  C --> D["Developer opens a pull request"]
-  D --> E["CodeGuardian starts analysis automatically"]
-  E --> F["GitHub shows pending CodeGuardian check"]
-  F --> G["CodeGuardian posts risk result"]
-  G --> H{"Risk level"}
+  A["Developer adds the workflow"] --> B["Choose policy mode"]
+  B --> C["Developer opens a pull request"]
+  C --> D["CodeGuardian starts analysis automatically"]
+  D --> E["GitHub shows pending CodeGuardian check"]
+  E --> F["CodeGuardian posts risk result"]
+  F --> G{"Risk level"}
 
-  H -->|Low| I["Check passes<br/>Developer can merge"]
-  H -->|Medium| J["Check passes or neutral<br/>Developer reviews recommendations"]
-  H -->|High| K["Check warns or requires action<br/>Developer runs tests or fixes issues"]
-  H -->|Critical| L["Check fails if blocking policy is enabled<br/>Merge is blocked"]
+  G -->|Low| H["Check passes<br/>Developer can merge"]
+  G -->|Medium| I["Check passes or neutral<br/>Developer reviews recommendations"]
+  G -->|High| J["Check warns or requires action<br/>Developer runs tests or fixes issues"]
+  G -->|Critical| K["Check fails if blocking policy is enabled<br/>Merge is blocked"]
 
-  J --> M["Developer updates PR"]
-  K --> M
-  L --> M
-  M --> E
-  I --> N["PR merged"]
+  I --> L["Developer updates PR"]
+  J --> L
+  K --> L
+  L --> D
+  H --> M["PR merged"]
 ```
 
 ## First-Time Setup Flow
@@ -51,14 +54,12 @@ sequenceDiagram
   participant GH as GitHub
   participant CG as CodeGuardian
 
-  User->>GH: Install CodeGuardian GitHub App
-  GH->>User: Choose org and repositories
-  GH->>CG: Send installation event
-  CG->>GH: Verify installation
-  CG->>User: Open setup screen
-  User->>CG: Choose default policy mode
-  CG->>GH: Start repository indexing
-  CG->>User: Show setup complete
+  User->>GH: Add CodeGuardian workflow to repository
+  User->>GH: Optionally add model secrets
+  User->>GH: Commit workflow and open PR
+  GH->>CG: Start Action run
+  CG->>GH: Create check and sticky comment
+  GH->>User: Show merge-page result
 ```
 
 ## Policy Modes
@@ -68,8 +69,8 @@ CodeGuardian should support three policy modes so teams can adopt gradually.
 | Mode | GitHub Check Behavior | Best For |
 | --- | --- | --- |
 | Advisory | Always non-blocking, posts risk summary | Individual developers, early trials, open source |
-| Guarded | Blocks only critical risks | Startup teams and active product teams |
-| Strict | Blocks high and critical risks | Enterprise, platform teams, regulated workflows |
+| Guarded | Blocks high and critical risks | Startup teams and active product teams |
+| Strict | Blocks high and critical risks with the least tolerance for overrides/noise | Critical repos and tightly controlled workflows |
 
 ## Everyday Developer Flow
 
@@ -109,7 +110,7 @@ CodeGuardian AI
 This PR is low risk.
 
 Affected areas:
-- Web dashboard
+- Settings page
 - Button component styles
 
 Recommended action:
@@ -126,7 +127,7 @@ Expected behavior:
 - Check conclusion: `success`.
 - Merge is allowed.
 - No noisy comments unless the repo has summary comments enabled.
-- Dashboard link is available for details.
+- Artifact link is available for details.
 
 ## PR Merge Box: Medium Risk Example
 
@@ -248,7 +249,8 @@ Expected behavior:
 
 ## Sticky PR Summary Comment
 
-The sticky PR summary comment should be updated in place instead of posting a new comment after every commit.
+The sticky PR summary comment should be updated in place instead of posting a
+new comment after every commit.
 
 ```markdown
 ## CodeGuardian AI Risk Report
@@ -323,7 +325,7 @@ sequenceDiagram
   participant AI as AI Agents
 
   Dev->>GH: Push commits to PR
-  GH->>CG: pull_request synchronize webhook
+  GH->>CG: pull_request event triggers Action run
   CG->>GH: Set CodeGuardian check to in_progress
   CG->>CG: Fetch diff and changed files
   CG->>KG: Load repository graph
@@ -350,7 +352,7 @@ Top-level GitHub PR output:
 - Top 3 recommended actions.
 - Full report link.
 
-Full dashboard output:
+Full artifact/report output:
 
 - Complete dependency impact graph.
 - All findings and evidence.
@@ -429,5 +431,5 @@ CodeGuardian should be:
 - Configurable enough that teams can choose whether it blocks merge.
 - Evidence-backed enough that senior engineers trust it.
 
-The best version of the product lives in the GitHub merge flow. The dashboard should deepen the experience, but GitHub should remain the place where developers understand and act on merge risk.
-
+The best version of the product lives in the GitHub merge flow. GitHub should
+remain the place where developers understand and act on merge risk.

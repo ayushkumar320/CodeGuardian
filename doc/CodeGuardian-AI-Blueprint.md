@@ -1,5 +1,10 @@
 # CodeGuardian AI: Product and Engineering Blueprint
 
+> Note: this file describes the **long-term vision** and deferred architecture.
+> The **current product** is the GitHub-Action-native PR merge-page experience
+> documented in [README.md](../README.md), [INSTALL.md](../INSTALL.md), and the
+> active production plan under [doc/build/](build/).
+
 Tagline: "Know what breaks before you merge."
 
 ## 1. Executive Summary
@@ -898,4 +903,3 @@ Use:
 - Auth: GitHub OAuth for developers, SAML/SCIM for enterprise later.
 
 Most important product constraint: earn trust by being quiet, specific, and right. The first version should produce fewer findings than competitors, but every finding should make the developer think, "I am glad this caught that before merge."
-

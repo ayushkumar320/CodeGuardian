@@ -54,10 +54,32 @@ Pick the topic, open only the listed target.
 | **Model routing Groq→HF→deterministic** | PLAN "Model Strategy" |
 | PR merge-page output contract (example check) | PLAN "GitHub PR Merge Page Output Contract" |
 | Definition of MVP done | PLAN "Definition Of Done" ; BIDX bottom |
+| Current production objective / what v1.0 means | BIDX "Goal", "Definition Of Production-Ready (v1.0 done)" |
 | **Realized product contract (check states, score rubric, blocking modes, sticky comment, commands, data contracts)** | P0C |
 | Check conclusion mapping (success/neutral/action_required/failure) per mode | P0C §A2, §A5 |
 | Finding / Report / PrContext / State TypeScript contracts | P0C §B4, §B5 |
 | Build order between phases | BIDX "Recommended Build Order" |
+| Why phases 7–12 stay GitHub-Actions-native and still exclude hosted SaaS | BIDX intro ; ROOT strict rule #8 |
+| Real-PR validation scope / sandbox repo / public-private-fork coverage | P7 "Objective", "Scope", "Deliverables" |
+| Live API gaps to harden first (pagination, rate limits, large diffs, concurrent runs, missing permissions) | P7 "Scope" |
+| E2E harness expectations for real PRs | P7 "Deliverables", "Acceptance Criteria" |
+| Never-crash boundary / degraded-run behavior / exit-0 on internal errors | P8 "Scope", "Deliverables", "Acceptance Criteria" |
+| Retry/backoff/timeouts for GitHub, Groq, HF | P8 "Scope", "Deliverables" |
+| Debug logging / job summary / `--selfcheck` | P8 "Scope", "Deliverables" |
+| Fork PR safety / `pull_request` vs `pull_request_target` guidance | P9 "Scope", "Deliverables", "Acceptance Criteria" |
+| Prompt-injection validation corpus and evidence-only model rule | P9 "Scope", "Acceptance Criteria" ; WFI §19 |
+| Output secret scanning before posting | P9 "Scope", "Deliverables" |
+| Supply-chain hardening (pinned actions, Dependabot, CodeQL, SBOM, signed releases) | P9 "Scope", "Deliverables" |
+| Performance bottlenecks to measure first | P10 "Current cost centers (to measure first)" |
+| Shared import graph / bounded repo walk / batched diff parsing | P10 "Scope", "Deliverables" |
+| Large-diff caps / soft timeout / partial-result publishing | P10 "Scope", "Deliverables" |
+| Memory retention / compaction policy | P10 "Scope", "Deliverables" ; `src/codeguardian/policy.py` (`Memory`) ; `src/codeguardian/memory/*` |
+| Release packaging choice (Docker vs locked wheels) | P11 "Scope", "Deliverables" |
+| Automated release workflow / moving `v1` tag / SemVer consumer contract | P11 "Scope", "Deliverables", "Acceptance Criteria" ; [RELEASING.md](RELEASING.md) |
+| Marketplace listing assets / examples / screenshots | P11 "Scope", "Deliverables" |
+| Beta plan / dogfood repos / false-positive feedback loop | P12 "Scope", "Deliverables", "Acceptance Criteria" |
+| Scoring and threshold tuning for low false positives | P12 "Scope", "Deliverables" |
+| GA readiness / support-triage / post-v1 roadmap | P12 "Scope", "Deliverables" |
 | Risk report / finding schema | P1 "Finding Schema" ; P4 "Finding schema" |
 | LangGraph node list / state contract | P1 "LangGraph MVP Nodes" ; P2 "LangGraph State Contract" |
 | Agent graph + per-agent rules | P2 "Agent Graph" ; BP §4 |
@@ -72,6 +94,9 @@ Pick the topic, open only the listed target.
 | Deterministic mode behavior when no model keys exist | WFI §5 ; P2 "Model Provider Routing" |
 | Recheck / compare / ignore command behavior | WFI §13, §14, §17 ; P3 "Supported Commands", "Command Rules" |
 | Suppression accountability | WFI §14 ; P3 "Command Rules" ; P4 "Policy File" |
+| Progressive disclosure in reports / concise PR comment vs full artifact | WFI §3, §18 |
+| Policy-file refinement ideas and service-owner hints | WFI §15, §16 ; `src/codeguardian/policy.py` |
+| Quiet rollout strategy (advisory -> guarded -> strict) | WFI §9 ; ROOT "Quiet by default" |
 | Prompt-injection and untrusted repo text rules | WFI §19 ; PLAN "Prompt Safety Rules" ; ROOT "Strict rules" |
 | Build prompt token-saving rules | This file, "Build prompt preflight" |
 
@@ -131,6 +156,7 @@ Recommended phase node sets (active = production plan; MVP nodes are in archive/
 | Performance/scale | ROOT, BIDX, P10, Code map |
 | Release/Marketplace | ROOT, BIDX, P11, RELEASING.md |
 | Beta/GA | ROOT, BIDX, P12 |
+| Workflow/report UX refinements | ROOT, WFI, then the matching active phase doc |
 | (MVP history) any 0–6 topic | archive/ + Code map |
 
 ## Key invariants (memorize; don't re-derive)

@@ -16,9 +16,11 @@ own maintenance note).
 These are hard constraints. If a request conflicts with one, stop and flag it
 rather than silently breaking it.
 
-1. **Docs are the source of truth; the build plan wins for the MVP.** Do not
-   invent architecture. For MVP conflicts, `doc/Phase-Wise-Build-Plan.md` and
-   `doc/build/` override `doc/CodeGuardian-AI-Blueprint.md`.
+1. **Docs are the source of truth; the active build plan wins.** Do not invent
+   architecture. For implementation conflicts, `doc/build/` (phases 7–12) wins
+   for current work, the archived MVP docs explain delivered behavior, and both
+   override `doc/CodeGuardian-AI-Blueprint.md` when the blueprint describes a
+   larger deferred end state.
 2. **Deterministic-first, always.** Static analysis / graph / scoring produce
    evidence; the LLM only synthesizes. A model must **never** create a finding
    with no analyzer evidence behind it.
@@ -34,11 +36,12 @@ rather than silently breaking it.
    Redact secrets before any model call. Never log raw secrets or full source.
 7. **Idempotency is mandatory.** Dedupe by installation/repo/PR/head-SHA/analyzer
    version; collapse stale PR jobs when newer commits arrive.
-8. **Stay in MVP scope.** Do not build out-of-scope items (Neo4j, enterprise SSO,
-   all-language support, learned ML model, runtime observability, hosted
-   dashboard/DB) unless the user explicitly asks.
-9. **Confirm before scaffolding code or committing a stack choice** — the stack
-   below is a doc recommendation, not yet a committed decision.
+8. **Stay in the documented scope.** Do not build out-of-scope items (Neo4j,
+   enterprise SSO, all-language support, learned ML model, external telemetry,
+   hosted dashboard/DB) unless the user explicitly asks.
+9. **Respect the committed implementation stack.** Repository code is Python +
+   LangGraph + Pydantic today. Do not drift back to the blueprint's TypeScript
+   recommendation unless the user explicitly asks for that rewrite.
 10. **Keep [CONTEXT-GRAPH.md](CONTEXT-GRAPH.md) in sync** whenever docs are added
     or code is created. A stale map costs more tokens than no map.
 
@@ -65,20 +68,27 @@ zero-key deterministic, with a full test suite. The MVP build docs are archived
 under [doc/build/archive/](doc/build/archive/).
 
 **Active work:** the **Production & Shipment plan (v1.0)**, phases 7–12, at
-[doc/build/README.md](doc/build/README.md). This stays GitHub-Actions-native — the
-hosted-SaaS end state remains out of scope (strict rule #8) until explicitly
-chosen. Always check [CURRENT-PHASE.md](CURRENT-PHASE.md) for what's next, and the
-[CONTEXT-GRAPH.md](CONTEXT-GRAPH.md) code map for where code lives.
+[doc/build/README.md](doc/build/README.md). As of **June 27, 2026**, the repo is
+starting **Phase 7: Real-PR Validation & End-to-End Hardening**, followed by
+robustness, security, performance, release engineering, and beta/GA work through
+Phase 12. This stays GitHub-Actions-native — the hosted-SaaS end state remains
+out of scope (strict rule #8) until explicitly chosen. Always check
+[CURRENT-PHASE.md](CURRENT-PHASE.md) for what's next, and
+[CONTEXT-GRAPH.md](CONTEXT-GRAPH.md) for both doc routing and the code map.
 
 When asked to implement, follow the phased plan rather than inventing a new
-architecture. Confirm scope against the relevant phase doc first.
+architecture. Confirm scope against the relevant phase doc first, and use
+[doc/Workflow-Improvements.md](doc/Workflow-Improvements.md) only as a refinement
+layer for report UX, command behavior, noise control, and prompt-safety details.
 
 ## Where the plans live
 
 - [doc/CodeGuardian-AI-Blueprint.md](doc/CodeGuardian-AI-Blueprint.md) — full product + engineering blueprint (the long-term vision: knowledge graph, multi-agent AI, SaaS scaling, billing, security). Read for *why* and the eventual target.
 - [doc/Phase-Wise-Build-Plan.md](doc/Phase-Wise-Build-Plan.md) — the **MVP** plan (✅ delivered; historical reference for *why the MVP is shaped as it is*).
 - [doc/build/README.md](doc/build/README.md) — the **active** plan: Production & Shipment to v1.0 (phases 7–12). Read for *what to build now*. MVP phases 0–6 are archived in [doc/build/archive/](doc/build/archive/).
-- [doc/GitHub-PR-User-Flowmap.md](doc/GitHub-PR-User-Flowmap.md), [doc/Workflow-Improvements.md](doc/Workflow-Improvements.md) — UX flow and refinements.
+- [doc/build/phase-7-real-pr-validation.md](doc/build/phase-7-real-pr-validation.md) through [doc/build/phase-12-beta-and-ga.md](doc/build/phase-12-beta-and-ga.md) — the current production-track source of truth for sequencing, deliverables, and acceptance criteria.
+- [doc/GitHub-PR-User-Flowmap.md](doc/GitHub-PR-User-Flowmap.md) — end-to-end PR UX flow.
+- [doc/Workflow-Improvements.md](doc/Workflow-Improvements.md) — refinement guidance for sticky comments, progressive disclosure, deterministic fallback UX, commands, suppressions, policy-file behavior, and prompt-injection handling. It supports the phase docs; it does not replace them.
 
 If the blueprint and the build plan ever seem to conflict, **the build plan and
 phase docs win for the MVP** — the blueprint describes a larger end state that is
@@ -130,13 +140,13 @@ imports, layer direction, circular deps), basic Prisma migration risk,
 deployment, enterprise SSO/SAML, all-language support, a learned ML risk model,
 runtime observability, a hosted dashboard/database.
 
-## Intended stack (per the blueprint — not yet scaffolded)
+## Blueprint stack (deferred end-state, not the current repo stack)
 
-TypeScript throughout. Frontend Next.js + Tailwind (dashboard is post-MVP).
-Backend NestJS/Fastify modular monolith + workers. PostgreSQL (source of truth),
-Redis, object storage, queue. Graph as PostgreSQL adjacency tables first (Neo4j
-much later). `pgvector` for embeddings. Tree-sitter + TS compiler API for parsing.
-LangGraph for agent orchestration.
+The blueprint still describes a larger future TypeScript-heavy architecture:
+Next.js/Tailwind frontend, NestJS/Fastify backend, PostgreSQL, Redis, object
+storage, queues, adjacency-table graph storage, `pgvector`, and Tree-sitter/TS
+compiler parsing. Treat that as deferred end-state guidance only.
 
-Confirm the actual stack choice with the user before scaffolding — these are
-recommendations in the doc, not yet committed decisions in code.
+The **current repo stack is already committed**: Python + LangGraph + Pydantic,
+running as a GitHub Action. Do not "correct" the codebase back toward the
+blueprint unless the user explicitly asks for a rewrite.
