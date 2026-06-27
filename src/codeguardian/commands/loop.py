@@ -56,6 +56,8 @@ def plan(command: Command, reports: list[Report], author_association: str | None
         return Outcome(reply=handlers.summary(latest))
     if name == CommandName.compare:
         return Outcome(reply=handlers.compare(latest, previous))
+    if name == CommandName.history:
+        return Outcome(reply=handlers.history(latest))
 
     return Outcome(reply=handlers.HELP_TEXT)
 

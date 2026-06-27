@@ -29,6 +29,7 @@ class CommandName(str, Enum):
     recheck = "recheck"
     compare = "compare"
     summary = "summary"
+    history = "history"
     ignore = "ignore"
     unknown = "unknown"
 
@@ -59,6 +60,7 @@ class Command:
             CommandName.why_blocked,
             CommandName.compare,
             CommandName.summary,
+            CommandName.history,
         }
 
 
@@ -71,6 +73,8 @@ def parse(body: str) -> Optional[Command]:
 
     if low.startswith("why blocked") or low.startswith("why_blocked") or low.startswith("why-blocked"):
         return Command(CommandName.why_blocked, raw=after)
+    if low.startswith("has this happened") or low.startswith("history"):
+        return Command(CommandName.history, raw=after)
     if low.startswith("ignore"):
         m = _IGNORE_RE.search(after)
         if m:

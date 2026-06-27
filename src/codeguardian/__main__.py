@@ -25,6 +25,8 @@ from .github.events import (
     parse_pr_context,
 )
 from .graph.build import run_analysis
+from .memory.record import MemoryRecord
+from .memory.store import GitBranchMemoryStore
 from .models import PrContext, Report, RiskLevel, Suppression
 from .policy import Policy
 from .providers import deterministic_summary
@@ -67,9 +69,23 @@ def _write_artifacts(report: Report, policy: Policy, narrative: str) -> str:
     return json_path
 
 
+def _memory_store(repo_root: str, policy: Policy):
+    if not policy.memory.enabled:
+        return None
+    return GitBranchMemoryStore(repo_root, policy.memory.branch)
+
+
 def _analyze_and_publish(repo_root: str, pr: PrContext, policy: Policy) -> Report:
-    report, narrative = run_analysis(repo_root, pr, policy)
+    store = _memory_store(repo_root, policy)
+    report, narrative = run_analysis(repo_root, pr, policy, memory_store=store)
     json_path = _write_artifacts(report, policy, narrative)
+
+    # Persist a compact memory record for future PRs (best-effort).
+    if store is not None:
+        try:
+            store.append(MemoryRecord.from_report(report))
+        except Exception as exc:  # noqa: BLE001
+            print(f"CodeGuardian: memory write skipped: {exc}", file=sys.stderr)
 
     client = GitHubClient()
     title = f"{report.risk.score}/10 {report.risk.level.value} — {'blocked' if report.risk.blocking else 'allowed'}"

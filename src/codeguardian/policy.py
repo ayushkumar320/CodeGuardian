@@ -57,6 +57,13 @@ class ServiceOwner(BaseModel):
     owners: list[str]  # e.g. ["@platform/db"]
 
 
+class Memory(BaseModel):
+    enabled: bool = True
+    branch: str = "codeguardian-memory"
+    max_results: int = 3
+    min_similarity: float = 0.34
+
+
 class Policy(BaseModel):
     mode: Mode = Mode.advisory  # gradual rollout: advisory first
     thresholds: Thresholds = Field(default_factory=Thresholds)
@@ -64,6 +71,7 @@ class Policy(BaseModel):
     architecture: Architecture = Field(default_factory=Architecture)
     test_suite_mappings: list[TestSuite] = Field(default_factory=list)
     service_owners: list[ServiceOwner] = Field(default_factory=list)
+    memory: Memory = Field(default_factory=Memory)
     ignored_findings: list[str] = Field(default_factory=list)  # finding IDs pre-suppressed
     high_risk_paths: list[str] = Field(
         default_factory=lambda: [
@@ -92,6 +100,6 @@ class Policy(BaseModel):
 def _pick_known(data: dict) -> dict:
     known = {
         "mode", "thresholds", "noise", "architecture", "test_suite_mappings",
-        "service_owners", "ignored_findings", "high_risk_paths",
+        "service_owners", "memory", "ignored_findings", "high_risk_paths",
     }
     return {k: v for k, v in data.items() if k in known}

@@ -18,6 +18,7 @@ HELP_TEXT = (
     "- `@codeguardian tests` — tests to run before merge\n"
     "- `@codeguardian why blocked` — the finding blocking merge + the fix\n"
     "- `@codeguardian compare` — what changed since the last run\n"
+    "- `@codeguardian has this happened before?` — similar past PRs\n"
     "- `@codeguardian recheck` — re-run the analysis (maintainers)\n"
     "- `@codeguardian ignore <id> reason: …` — suppress a finding (maintainers)\n"
     "- `@codeguardian summary` — repost the short report\n"
@@ -109,6 +110,14 @@ def summary(report: Report) -> str:
     if not active:
         return head + " — no findings."
     return head + f" — {len(active)} finding(s). Use `@codeguardian explain` for detail."
+
+
+def history(report: Report) -> str:
+    if not report.historical_context:
+        return "No similar past PRs found in CodeGuardian memory for this change."
+    lines = ["**Has this happened before?**"]
+    lines += [f"- {c}" for c in report.historical_context]
+    return "\n".join(lines)
 
 
 def compare(current: Report, previous: Optional[Report]) -> str:

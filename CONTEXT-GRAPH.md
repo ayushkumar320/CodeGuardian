@@ -4,7 +4,7 @@ A compact **concept → location** memory graph for CodeGuardian AI. Purpose: fi
 the right doc/section without reading every file. Read this first; then open only
 the one `doc/...:Section` a node points to.
 
-- **Repo state:** Phase 0–4 implemented. Code under `src/codeguardian/`.
+- **Repo state:** Phase 0–5 implemented. Code under `src/codeguardian/`.
   Stack is **Python + LangGraph** (committed; overrides the docs' TypeScript
   recommendation).
 - **Authority:** for MVP conflicts, the build plan + phase docs override the
@@ -76,12 +76,17 @@ Pick the topic, open only the listed target.
 | Prompt-injection and untrusted repo text rules | WFI §19 ; PLAN "Prompt Safety Rules" ; ROOT "Strict rules" |
 | Build prompt token-saving rules | This file, "Build prompt preflight" |
 
-## Code map (Phase 1–4)
+## Code map (Phase 1–5)
 
 Python package at `src/codeguardian/`. Stack: Python + LangGraph + Pydantic.
 
 | If you need… | Go to |
 |---|---|
+| Memory record (compact, privacy-safe) + signature | `src/codeguardian/memory/record.py` |
+| Memory stores (local JSONL / git branch) | `src/codeguardian/memory/store.py` |
+| Similarity retrieval (path/category Jaccard) | `src/codeguardian/memory/retrieve.py` |
+| Historical-knowledge graph node | `src/codeguardian/graph/agents.py` (`historical_knowledge_agent`) |
+| Memory policy (enable/branch/thresholds) | `src/codeguardian/policy.py` (`Memory`) |
 | `@codeguardian` command parser / permissions / reply handlers / plan logic | `src/codeguardian/commands/parser.py`, `commands/permissions.py`, `commands/handlers.py`, `commands/loop.py` |
 | Comment-event parsing / artifact retrieval / reply idempotency / get_pull | `src/codeguardian/github/events.py` (`parse_comment_event`), `github/client.py` (`latest_reports`, `already_replied`, `get_pull`) |
 | Shared-type breakage analyzer | `src/codeguardian/analyzers/types.py` |

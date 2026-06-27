@@ -27,3 +27,4 @@ class CodeGuardianState(TypedDict, total=False):
     errors: Annotated[list[str], operator.add]
     report: Report
     narrative: str
+    memory_store: object  # optional MemoryStore for historical retrieval

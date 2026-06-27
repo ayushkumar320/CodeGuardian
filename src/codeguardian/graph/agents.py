@@ -23,6 +23,8 @@ from ..analyzers import database as db_analyzer
 from ..analyzers import imports as imports_analyzer
 from ..analyzers import tests as tests_analyzer
 from ..analyzers import types as types_analyzer
+from ..memory.record import Signature
+from ..memory.retrieve import context_lines, find_similar
 from ..models import Finding, Provider, Report, Suppression
 from ..pr.classify import is_docs_only
 from ..providers import summarize
@@ -142,6 +144,30 @@ def _reviewers(findings: list[Finding], policy) -> list[str]:
                 if owner not in out:
                     out.append(owner)
     return out
+
+
+def historical_knowledge_agent(state: CodeGuardianState) -> dict:
+    """Attach historical context (similar past PRs) to the report. Informational
+    only — it never changes the deterministic score, just adds a 'has this
+    happened before?' signal (P5: history appears only when useful)."""
+    policy = state["policy"]
+    store = state.get("memory_store")
+    report = state["report"]
+    if store is None or not policy.memory.enabled:
+        return {}
+    try:
+        records = store.load()
+    except Exception as exc:  # noqa: BLE001
+        return {"errors": [f"history: {exc}"]}
+    matches = find_similar(
+        Signature.from_report(report),
+        records,
+        report.pr.number,
+        policy.memory.max_results,
+        policy.memory.min_similarity,
+    )
+    report.historical_context = context_lines(matches)
+    return {"report": report}
 
 
 def recommendation_agent(state: CodeGuardianState) -> dict:

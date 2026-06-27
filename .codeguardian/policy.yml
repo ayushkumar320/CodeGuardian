@@ -44,6 +44,14 @@ service_owners: []
   # - paths: "**/prisma/**"
   #   owners: ["@platform/db"]
 
+# GitHub-native memory (Phase 5). Compact records persist on a repo branch so
+# CodeGuardian can answer "has this happened before?" across PRs.
+memory:
+  enabled: true
+  branch: codeguardian-memory
+  max_results: 3
+  min_similarity: 0.34
+
 # Finding IDs to pre-suppress (kept visible in the summary, excluded from score).
 ignored_findings: []
   # - CG-DB-002

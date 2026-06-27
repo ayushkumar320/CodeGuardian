@@ -103,6 +103,9 @@ def sticky_comment(report: Report, policy: Policy, narrative: str) -> str:
         lines += [f"{i}. {a}" for i, a in enumerate(report.actions[:3], 1)]
     if report.reviewers:
         lines += ["", "**Recommended reviewers:** " + ", ".join(report.reviewers)]
+    if report.historical_context:
+        lines += ["", "**Has this happened before?**"]
+        lines += [f"- {c}" for c in report.historical_context]
 
     shown = active[: policy.noise.max_findings_comment]
     if shown:

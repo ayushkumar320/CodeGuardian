@@ -32,6 +32,7 @@ def build_graph():
     for name, fn in _DOMAIN_AGENTS:
         g.add_node(name, fn)
     g.add_node("risk_scoring_agent", agents.risk_scoring_agent)
+    g.add_node("historical_knowledge_agent", agents.historical_knowledge_agent)
     g.add_node("recommendation_agent", agents.recommendation_agent)
 
     g.add_edge(START, "collect_pr_context")
@@ -39,12 +40,15 @@ def build_graph():
     for name, _ in _DOMAIN_AGENTS:
         g.add_edge("repository_context", name)   # fan out (parallel superstep)
         g.add_edge(name, "risk_scoring_agent")   # fan in (waits for all)
-    g.add_edge("risk_scoring_agent", "recommendation_agent")
+    g.add_edge("risk_scoring_agent", "historical_knowledge_agent")
+    g.add_edge("historical_knowledge_agent", "recommendation_agent")
     g.add_edge("recommendation_agent", END)
     return g.compile()
 
 
-def run_analysis(repo_root: str, pr: PrContext, policy: Policy) -> tuple[Report, str]:
+def run_analysis(
+    repo_root: str, pr: PrContext, policy: Policy, memory_store: object | None = None
+) -> tuple[Report, str]:
     graph = build_graph()
     initial: CodeGuardianState = {
         "repo_root": repo_root,
@@ -54,5 +58,7 @@ def run_analysis(repo_root: str, pr: PrContext, policy: Policy) -> tuple[Report,
         "provider_usage": [],
         "errors": [],
     }
+    if memory_store is not None:
+        initial["memory_store"] = memory_store
     final = graph.invoke(initial)
     return final["report"], final.get("narrative", "")

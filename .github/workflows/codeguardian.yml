@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write   # write needed only for the codeguardian-memory branch (Phase 5)
   pull-requests: write
   checks: write
   issues: write
