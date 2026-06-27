@@ -11,7 +11,42 @@ The product goal is simple: every pull request should answer:
 - Is this safe to merge?
 - What should the developer do next?
 
-This repository currently contains the startup-level product and technical blueprint for CodeGuardian AI. The complete detailed blueprint is available in [doc/CodeGuardian-AI-Blueprint.md](doc/CodeGuardian-AI-Blueprint.md).
+This repository contains the startup-level product and technical blueprint for CodeGuardian AI **plus a working Phase 1 MVP** (a GitHub Action that runs deterministic PR risk analysis orchestrated by LangGraph, with zero model keys required). The complete detailed blueprint is available in [doc/CodeGuardian-AI-Blueprint.md](doc/CodeGuardian-AI-Blueprint.md).
+
+## Quick start (Phase 1 MVP)
+
+Add CodeGuardian to a repo's PRs:
+
+```yaml
+# .github/workflows/codeguardian.yml
+name: CodeGuardian Risk
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+  issues: write
+  actions: read
+jobs:
+  risk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: your-org/CodeGuardian@v0
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}  # optional
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}          # optional
+```
+
+Provider fallback is **Groq → Hugging Face → deterministic**; with no keys the
+deterministic path still produces the full score and recommendations (the LLM
+only rephrases the summary, never invents findings). Develop locally with
+`python -m venv .venv && .venv/bin/pip install -e ".[dev]" && .venv/bin/pytest`.
+See [doc/build/phase-0-product-contract.md](doc/build/phase-0-product-contract.md)
+for the product contract and source layout under `src/codeguardian/`.
 
 ## Documentation
 
@@ -669,11 +704,14 @@ Why teams pay:
 
 ## Current Status
 
-This repository is initialized as a Git repository and contains product and architecture documentation. It intentionally does not contain implementation code yet.
+**Phase 0 (product contract) and Phase 1 (GitHub Actions PR checker MVP) are
+implemented.** The implementation stack is **Python + LangGraph** (a committed
+decision that overrides the doc's TypeScript recommendation). Source lives under
+`src/codeguardian/`; tests under `tests/`; the Action is `action.yml`.
 
 Recommended next steps:
 
-1. Create `/docs` for expanded architecture documents.
-2. Create `/apps` and `/packages` only when implementation begins.
+1. Phase 2 — fan the linear LangGraph into per-domain agents (API/DB/architecture).
+2. Phase 3 — the `@codeguardian` PR conversation loop on comment events.
 3. Add decision records for major architecture choices.
 4. Convert the MVP section into GitHub issues or a project roadmap.

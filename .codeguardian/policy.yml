@@ -1,0 +1,30 @@
+# CodeGuardian policy (Phase 1 subset). Unknown keys are ignored.
+
+# Blocking mode: advisory | guarded | strict.
+# advisory  = never blocks merge (gradual rollout, week 1)
+# guarded   = blocks High and Critical
+# strict    = blocks High and Critical, no soft override
+mode: advisory
+
+# Score thresholds (0-10) that define risk levels.
+thresholds:
+  medium: 3.1
+  high: 6.1
+  critical: 8.6
+
+# Bot-noise budgets.
+noise:
+  max_findings_check: 3
+  max_findings_comment: 5
+  comment_on_medium: true
+  allow_inline_annotations: false
+  skip_comment_for_docs_only: true
+
+# Glob patterns treated as high-risk (raises severity / blast radius).
+high_risk_paths:
+  - "**/migrations/**"
+  - "**/prisma/schema.prisma"
+  - "**/auth/**"
+  - "**/billing/**"
+  - "**/api/**"
+  - "**/*.types.ts"

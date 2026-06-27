@@ -1,0 +1,34 @@
+name: "CodeGuardian AI"
+description: "Know what breaks before you merge. GitHub-native pre-merge PR risk checker."
+branding:
+  icon: "shield"
+  color: "blue"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Install CodeGuardian
+      shell: bash
+      run: pip install --quiet "${{ github.action_path }}"
+
+    - name: Run CodeGuardian
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+        GROQ_API_KEY: ${{ env.GROQ_API_KEY }}
+        HF_TOKEN: ${{ env.HF_TOKEN }}
+        CODEGUARDIAN_OUT: ${{ runner.temp }}/codeguardian
+      run: python -m codeguardian
+
+    - name: Upload report artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: codeguardian-report
+        path: ${{ runner.temp }}/codeguardian/codeguardian-report.*
+        if-no-files-found: ignore
