@@ -58,9 +58,17 @@ but make every finding worth the developer's attention.
 
 ## Current state
 
-**This repo is documentation-only. There is no application code yet.** The work so
-far defines the product and the build plan. Everything in `doc/` is the source of
-truth for *what to build*; implementation has not started.
+**The MVP (build phases 0–6) is implemented.** Application code lives under
+`src/codeguardian/` (Python + LangGraph + Pydantic — a committed stack choice that
+overrides the docs' TypeScript recommendation). It runs as a GitHub Action,
+zero-key deterministic, with a full test suite. The MVP build docs are archived
+under [doc/build/archive/](doc/build/archive/).
+
+**Active work:** the **Production & Shipment plan (v1.0)**, phases 7–12, at
+[doc/build/README.md](doc/build/README.md). This stays GitHub-Actions-native — the
+hosted-SaaS end state remains out of scope (strict rule #8) until explicitly
+chosen. Always check [CURRENT-PHASE.md](CURRENT-PHASE.md) for what's next, and the
+[CONTEXT-GRAPH.md](CONTEXT-GRAPH.md) code map for where code lives.
 
 When asked to implement, follow the phased plan rather than inventing a new
 architecture. Confirm scope against the relevant phase doc first.
@@ -68,8 +76,8 @@ architecture. Confirm scope against the relevant phase doc first.
 ## Where the plans live
 
 - [doc/CodeGuardian-AI-Blueprint.md](doc/CodeGuardian-AI-Blueprint.md) — full product + engineering blueprint (the long-term vision: knowledge graph, multi-agent AI, SaaS scaling, billing, security). Read for *why* and the eventual target.
-- [doc/Phase-Wise-Build-Plan.md](doc/Phase-Wise-Build-Plan.md) — converts the blueprint into a buildable, **GitHub-Actions-first** MVP plan. Read for *what to build now*.
-- [doc/build/](doc/build/) — per-phase detail. Start at [doc/build/README.md](doc/build/README.md), then phases 0–6.
+- [doc/Phase-Wise-Build-Plan.md](doc/Phase-Wise-Build-Plan.md) — the **MVP** plan (✅ delivered; historical reference for *why the MVP is shaped as it is*).
+- [doc/build/README.md](doc/build/README.md) — the **active** plan: Production & Shipment to v1.0 (phases 7–12). Read for *what to build now*. MVP phases 0–6 are archived in [doc/build/archive/](doc/build/archive/).
 - [doc/GitHub-PR-User-Flowmap.md](doc/GitHub-PR-User-Flowmap.md), [doc/Workflow-Improvements.md](doc/Workflow-Improvements.md) — UX flow and refinements.
 
 If the blueprint and the build plan ever seem to conflict, **the build plan and

@@ -18,16 +18,15 @@ the one `doc/...:Section` a node points to.
 |----|------|----------------|
 | ROOT | [CLAUDE.md](CLAUDE.md) | Repo working rules, MVP invariants, scope guardrails |
 | BP | [doc/CodeGuardian-AI-Blueprint.md](doc/CodeGuardian-AI-Blueprint.md) | Long-term product + engineering vision (the end state) |
-| PLAN | [doc/Phase-Wise-Build-Plan.md](doc/Phase-Wise-Build-Plan.md) | GitHub-Actions-first MVP plan (what to build now) |
-| BIDX | [doc/build/README.md](doc/build/README.md) | Index + build order for the phase docs |
-| P0 | [doc/build/phase-0-product-foundation.md](doc/build/phase-0-product-foundation.md) | Product contract spec, GitHub-native UX |
-| P0C | [doc/build/phase-0-product-contract.md](doc/build/phase-0-product-contract.md) | **Realized** Phase 0 contract: journey, rubric, blocking, comment/check copy, commands, tech foundation |
-| P1 | [doc/build/phase-1-github-actions-pr-checker.md](doc/build/phase-1-github-actions-pr-checker.md) | First working PR risk checker MVP |
-| P2 | [doc/build/phase-2-langgraph-agentic-ai.md](doc/build/phase-2-langgraph-agentic-ai.md) | Multi-agent LangGraph workflow |
-| P3 | [doc/build/phase-3-pr-conversation-loop.md](doc/build/phase-3-pr-conversation-loop.md) | `@codeguardian` in-PR commands |
-| P4 | [doc/build/phase-4-advanced-analyzers.md](doc/build/phase-4-advanced-analyzers.md) | DB / API / architecture analysis + policy file |
-| P5 | [doc/build/phase-5-memory-and-history.md](doc/build/phase-5-memory-and-history.md) | GitHub-native memory + historical learning |
-| P6 | [doc/build/phase-6-packaging-and-adoption.md](doc/build/phase-6-packaging-and-adoption.md) | Reusable Action, onboarding, release |
+| PLAN | [doc/Phase-Wise-Build-Plan.md](doc/Phase-Wise-Build-Plan.md) | MVP plan (✅ delivered; historical reference) |
+| BIDX | [doc/build/README.md](doc/build/README.md) | **Active** production & shipment plan (v1.0): phases 7–12 |
+| P7 | [doc/build/phase-7-real-pr-validation.md](doc/build/phase-7-real-pr-validation.md) | Real-PR validation & live-API hardening (▶ next) |
+| P8 | [doc/build/phase-8-robustness-observability.md](doc/build/phase-8-robustness-observability.md) | Never-crash, retries/timeouts, job summary, logs |
+| P9 | [doc/build/phase-9-security-hardening.md](doc/build/phase-9-security-hardening.md) | Fork-PR safety, prompt-injection corpus, supply chain |
+| P10 | [doc/build/phase-10-performance-scale.md](doc/build/phase-10-performance-scale.md) | Perf budgets, shared import graph, memory compaction |
+| P11 | [doc/build/phase-11-release-marketplace.md](doc/build/phase-11-release-marketplace.md) | Reproducible packaging, release automation, Marketplace |
+| P12 | [doc/build/phase-12-beta-and-ga.md](doc/build/phase-12-beta-and-ga.md) | Beta, scoring tuning, v1.0 GA |
+| MVPDOCS | [doc/build/archive/](doc/build/archive/) | ✅ Delivered MVP build phases 0–6 (archived record) |
 | FLOW | [doc/GitHub-PR-User-Flowmap.md](doc/GitHub-PR-User-Flowmap.md) | End-to-end PR user flow |
 | WFI | [doc/Workflow-Improvements.md](doc/Workflow-Improvements.md) | Workflow refinements |
 
@@ -122,17 +121,17 @@ the current phase node(s) named below. Treat those docs as the source of truth;
 do not re-read the blueprint unless a graph edge explicitly points there.
 ```
 
-Recommended phase node sets:
+Recommended phase node sets (active = production plan; MVP nodes are in archive/):
 
 | Build task | Read |
 |---|---|
-| Product foundation | ROOT, PLAN, P0, WFI |
-| PR checker MVP | ROOT, PLAN, P1, P2, WFI |
-| LangGraph workflow | ROOT, PLAN, P2, P1 |
-| PR conversation loop | ROOT, PLAN, P3, P1, P5 |
-| Advanced analyzers | ROOT, PLAN, P4, P1, P2 |
-| Memory/history | ROOT, PLAN, P5, P3 |
-| Packaging/adoption | ROOT, PLAN, P6, P1 |
+| Real-PR validation | ROOT, BIDX, P7, Code map |
+| Robustness/observability | ROOT, BIDX, P8, Code map |
+| Security hardening | ROOT, BIDX, P9, WFI |
+| Performance/scale | ROOT, BIDX, P10, Code map |
+| Release/Marketplace | ROOT, BIDX, P11, RELEASING.md |
+| Beta/GA | ROOT, BIDX, P12 |
+| (MVP history) any 0–6 topic | archive/ + Code map |
 
 ## Key invariants (memorize; don't re-derive)
 

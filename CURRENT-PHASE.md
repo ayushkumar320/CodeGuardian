@@ -5,28 +5,41 @@ Quick reference for where the build is. Update this when a phase ships.
 - **Branch model:** solo dev — commit directly to `main`.
 - **Stack (committed):** Python + LangGraph + Pydantic. Overrides the docs'
   TypeScript recommendation.
+- **Active plan:** [doc/build/README.md](doc/build/README.md) — Production &
+  Shipment (v1.0). MVP build record archived under
+  [doc/build/archive/](doc/build/archive/).
 
-## Status
+## MVP (Phases 0–6) — ✅ DELIVERED
+
+PR checker + LangGraph agents + `@codeguardian` loop + deep analyzers +
+GitHub-native memory + packaging. Code under `src/codeguardian/`; 55 tests green;
+runs zero-key deterministic. Detail: [archive/](doc/build/archive/).
+
+## Production track (Phases 7–12) — toward v1.0 GA
 
 | Phase | What | State |
 |-------|------|-------|
-| P0 | Product contract | ✅ done — [doc/build/phase-0-product-contract.md](doc/build/phase-0-product-contract.md) |
-| P1 | GitHub Actions PR checker MVP | ✅ done — code under `src/codeguardian/` |
-| P2 | LangGraph agentic AI (per-domain agents) | ✅ done — parallel agent graph, API/DB/arch analyzers |
-| P3 | `@codeguardian` PR conversation loop | ✅ done — command parser, handlers, recheck/ignore |
-| P4 | DB / API / architecture analyzers (deep) + policy | ✅ done — types/layers/cycles/spec-drift, richer policy |
-| P5 | GitHub-native memory & history | ✅ done — branch-backed memory, similarity retrieval, history node |
-| P6 | Packaging, distribution, adoption | ✅ done — Action inputs, CI, INSTALL/TROUBLESHOOTING/CHANGELOG/RELEASING |
+| **P7** | **Real-PR validation & live-API hardening** | **▶ NEXT — start here** |
+| P8 | Robustness & observability (never-crash, retries, job summary) | ⬜ pending |
+| P9 | Security & supply-chain hardening (fork-PR safety, injection corpus) | ⬜ pending |
+| P10 | Performance & scale (shared import graph, memory compaction) | ⬜ pending |
+| P11 | Release engineering & Marketplace (reproducible packaging, automation) | ⬜ pending |
+| P12 | Beta, tuning & v1.0 GA | ⬜ pending |
 
-**MVP complete (Phases 0–6).** Next is hardening + a real release tag, or post-MVP
-items (see below).
+## Next up: Phase 7 — real-PR validation
 
-## Next up: hardening / release
+Prove the Action against the live GitHub API before deeper hardening.
 
-The build plan (Phases 0–6) is implemented. Remaining work is operational:
+- **Read first:** CONTEXT-GRAPH.md → then ROOT, BIDX, P7.
+- **Goal:** install on a sandbox repo; exercise low-risk/high-risk/comment-command
+  /recheck/ignore/compare/history on public, private, and **fork** PRs; fix
+  live-API gaps (comment pagination, artifact download, recheck head fetch, memory
+  branch push, fork read-only token + no secrets, rate limits, large diffs); add
+  an `e2e/` harness.
+- **Keep working:** zero-key deterministic path, quiet defaults, evidence-cited.
 
-- Cut the first real release: tag `v0.1.0` + moving `v0` (see RELEASING.md).
-- Validate on a live PR: required-check gating, `recheck` fetching the PR head,
-  and the `codeguardian-memory` branch push under real permissions.
-- Post-MVP (only if asked — out of scope per CLAUDE.md): Python/other languages,
-  Neo4j graph, hosted dashboard/DB, learned ML risk model, SSO.
+## Open operational items (not new phases)
+
+- Push `main` to `origin` (currently several commits ahead).
+- Cut `v0.1.0` once P7 validates live behavior (see RELEASING.md) — note: the
+  first GA tag is **v1.0** at the end of P12.

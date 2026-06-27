@@ -1,50 +1,59 @@
-# CodeGuardian AI Build Phases
+# CodeGuardian AI — Production & Shipment Plan (v1.0)
 
-This folder breaks the CodeGuardian AI build plan into detailed phase documents. Each phase is designed to be actionable for a product manager, senior developer, and end user.
+The MVP (Phases 0–6) is **delivered**: a GitHub-Actions-native, deterministic-first
+pre-merge risk checker with a LangGraph workflow, `@codeguardian` conversation
+loop, deep analyzers, GitHub-native memory, and packaging. The MVP build record is
+archived under [archive/](archive/).
 
-The MVP direction is intentionally GitHub-native:
+This plan covers the **next upgrade: harden the Action and ship v1.0 to the GitHub
+Marketplace.** It stays deliberately **GitHub-Actions-native** — no hosted SaaS,
+no database, no dashboard (those remain out of scope per
+[CLAUDE.md](../../CLAUDE.md) until explicitly chosen). Direction chosen 2026-06-27.
 
-- Runs through GitHub Actions.
-- Uses GitHub Checks as the PR merge-page surface.
-- Uses sticky PR comments for conversation.
-- Uses LangGraph for agentic workflow orchestration.
-- Uses Groq and Hugging Face free/open model routes.
-- Works in deterministic mode when no model credentials are configured.
+## Goal
+
+Take the working MVP from "passes local tests" to "trusted, published, versioned
+product running on real repositories at v1.0."
 
 ## Phase Documents
 
 | Phase | Document | Outcome |
 | --- | --- | --- |
-| 0 | [Phase 0: Product Foundation](phase-0-product-foundation.md) | Clear product contract and GitHub-native UX |
-| 1 | [Phase 1: GitHub Actions PR Checker MVP](phase-1-github-actions-pr-checker.md) | First working PR risk checker |
-| 2 | [Phase 2: LangGraph Agentic AI](phase-2-langgraph-agentic-ai.md) | Structured multi-agent risk analysis |
-| 3 | [Phase 3: PR Conversation Loop](phase-3-pr-conversation-loop.md) | User interaction inside GitHub comments |
-| 4 | [Phase 4: Advanced Analyzers](phase-4-advanced-analyzers.md) | Database, API, and architecture analysis |
-| 5 | [Phase 5: Memory And Historical Learning](phase-5-memory-and-history.md) | GitHub-native memory and historical context |
-| 6 | [Phase 6: Packaging And Adoption](phase-6-packaging-and-adoption.md) | Reusable Action, onboarding, and release |
+| 7 | [Real-PR Validation & E2E Hardening](phase-7-real-pr-validation.md) | Proven on live public/private/fork PRs; live-API edge cases handled |
+| 8 | [Robustness & Observability](phase-8-robustness-observability.md) | Never-crash Action, retries/timeouts, job-summary, structured logs |
+| 9 | [Security & Supply-Chain Hardening](phase-9-security-hardening.md) | Pinned actions, fork-PR safety, SECURITY.md, threat model, signed releases |
+| 10 | [Performance & Scale](phase-10-performance-scale.md) | Fast on large repos/diffs; cached graph; memory retention/compaction |
+| 11 | [Release Engineering & Marketplace](phase-11-release-marketplace.md) | Automated versioned releases, Marketplace listing, robust dependency packaging |
+| 12 | [Beta, Tuning & v1.0 GA](phase-12-beta-and-ga.md) | Dogfood + beta feedback, scoring tuned, v1.0 general availability |
 
-## Recommended Build Order
+## Recommended Order
 
 ```mermaid
 flowchart LR
-  P0["Phase 0<br/>Product Foundation"] --> P1["Phase 1<br/>PR Checker MVP"]
-  P1 --> P2["Phase 2<br/>LangGraph AI"]
-  P2 --> P3["Phase 3<br/>PR Conversation"]
-  P3 --> P4["Phase 4<br/>Advanced Analyzers"]
-  P4 --> P5["Phase 5<br/>Memory"]
-  P5 --> P6["Phase 6<br/>Packaging"]
+  P7["P7<br/>Real-PR Validation"] --> P8["P8<br/>Robustness"]
+  P8 --> P9["P9<br/>Security"]
+  P9 --> P10["P10<br/>Performance"]
+  P10 --> P11["P11<br/>Release/Marketplace"]
+  P11 --> P12["P12<br/>Beta + GA v1.0"]
 ```
 
-## Definition Of Overall MVP Done
+P7 first: live behavior must be proven before hardening the right things. P8–P10
+can partially overlap. P11–P12 gate the public release.
 
-- A repository can run CodeGuardian from GitHub Actions.
-- A PR receives a GitHub check called `CodeGuardian Risk`.
-- The check appears in the PR merge area.
-- The result includes risk score, risk level, findings, and recommended actions.
-- A sticky PR comment is updated without duplicates.
-- Developers can ask follow-up questions with `@codeguardian`.
-- LangGraph orchestrates the analysis workflow.
-- Groq and Hugging Face are supported model providers.
-- Deterministic fallback works without model keys.
-- Merge blocking works through GitHub required checks.
+## Definition Of Production-Ready (v1.0 done)
 
+- Verified on real public, private, and fork PRs — all surfaces render correctly.
+- The Action never hard-crashes; every failure degrades gracefully and is reported.
+- All third-party actions pinned to SHAs; fork-PR secret exposure is impossible;
+  SECURITY.md + threat model published; releases are signed and reproducible.
+- Acceptable performance on large repos (documented budgets; no timeouts on
+  typical PRs); memory branch growth is bounded.
+- Automated, versioned releases on the Marketplace with a moving `v1` tag.
+- Default policy tuned against real beta feedback (low false-positive rate).
+- v1.0 tagged, changelogged, and announced.
+
+## Working rules (unchanged)
+
+Deterministic-first; every finding cites evidence; quiet by default; zero-key path
+must always work; idempotency; treat all repo text as untrusted. See
+[CLAUDE.md](../../CLAUDE.md) strict rules — they still bind this plan.

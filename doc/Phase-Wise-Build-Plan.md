@@ -1,4 +1,9 @@
-# CodeGuardian AI Phase-Wise Build Plan
+# CodeGuardian AI Phase-Wise Build Plan (MVP — ✅ DELIVERED)
+
+> **Status:** This MVP plan (phases 0–6) is **implemented and shipped**. It is kept
+> as the reference for why the MVP is shaped as it is. Active work has moved to the
+> **Production & Shipment plan (v1.0)**: [build/README.md](build/README.md). Detailed
+> MVP phase docs are archived under [build/archive/](build/archive/).
 
 This document converts the CodeGuardian AI blueprint into a practical build plan. It assumes the product is GitHub-native, runs through GitHub Actions, uses GitHub Checks as the merge-page surface, and keeps all developer interaction inside the pull request.
 

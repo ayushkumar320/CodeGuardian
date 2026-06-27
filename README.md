@@ -51,8 +51,9 @@ Provider fallback is **Groq → Hugging Face → deterministic**; with no keys t
 deterministic path still produces the full score and recommendations (the LLM
 only rephrases the summary, never invents findings). Develop locally with
 `python -m venv .venv && .venv/bin/pip install -e ".[dev]" && .venv/bin/pytest`.
-See [doc/build/phase-0-product-contract.md](doc/build/phase-0-product-contract.md)
-for the product contract and source layout under `src/codeguardian/`.
+See [doc/build/archive/phase-0-product-contract.md](doc/build/archive/phase-0-product-contract.md)
+for the product contract and source layout under `src/codeguardian/`. The active
+roadmap to v1.0 is [doc/build/README.md](doc/build/README.md).
 
 ## Documentation
 
