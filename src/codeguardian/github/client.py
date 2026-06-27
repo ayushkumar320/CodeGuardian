@@ -8,7 +8,10 @@ dry runs), so the deterministic path never hard-fails on GitHub I/O.
 
 from __future__ import annotations
 
+import io
+import json
 import os
+import zipfile
 from typing import Optional
 
 import requests
@@ -17,6 +20,8 @@ from .. import CHECK_NAME, SUMMARY_ANCHOR
 
 _API = "https://api.github.com"
 _TIMEOUT = 30
+_REPORT_ARTIFACT = "codeguardian-report"
+_REPORT_JSON = "codeguardian-report.json"
 
 
 class GitHubClient:
@@ -103,3 +108,77 @@ class GitHubClient:
         resp = requests.post(url, headers=self._headers(), json={"body": body}, timeout=_TIMEOUT)
         resp.raise_for_status()
         return resp.json().get("id")
+
+    def already_replied(self, owner: str, repo: str, number: int, marker: str) -> bool:
+        """Idempotency: true if a prior reply carrying ``marker`` already exists."""
+        if not self.enabled:
+            return False
+        url = f"{self.api_url}/repos/{owner}/{repo}/issues/{number}/comments"
+        page = 1
+        while True:
+            resp = requests.get(
+                url, headers=self._headers(),
+                params={"per_page": 100, "page": page}, timeout=_TIMEOUT,
+            )
+            resp.raise_for_status()
+            items = resp.json()
+            if any(marker in (c.get("body") or "") for c in items):
+                return True
+            if len(items) < 100:
+                return False
+            page += 1
+
+    # --- Pull request info ------------------------------------------------
+    def get_pull(self, owner: str, repo: str, number: int) -> Optional[dict]:
+        if not self.enabled:
+            return None
+        url = f"{self.api_url}/repos/{owner}/{repo}/pulls/{number}"
+        resp = requests.get(url, headers=self._headers(), timeout=_TIMEOUT)
+        resp.raise_for_status()
+        return resp.json()
+
+    # --- Report artifacts (memory) ----------------------------------------
+    def latest_reports(self, owner: str, repo: str, pr_number: int, limit: int = 2,
+                       scan: int = 30) -> list[dict]:
+        """Download recent `codeguardian-report` artifacts, parse their JSON, and
+        return up to `limit` reports for this PR, newest first. Best-effort: any
+        download/parse error is skipped so a read-only command still degrades.
+        """
+        if not self.enabled:
+            return []
+        url = f"{self.api_url}/repos/{owner}/{repo}/actions/artifacts"
+        try:
+            resp = requests.get(
+                url, headers=self._headers(),
+                params={"name": _REPORT_ARTIFACT, "per_page": scan}, timeout=_TIMEOUT,
+            )
+            resp.raise_for_status()
+            artifacts = resp.json().get("artifacts", [])
+        except (requests.RequestException, ValueError):
+            return []
+
+        out: list[dict] = []
+        for art in sorted(artifacts, key=lambda a: a.get("created_at", ""), reverse=True):
+            if art.get("expired"):
+                continue
+            data = self._download_report_json(art.get("id"))
+            if data and data.get("pr", {}).get("number") == pr_number:
+                out.append(data)
+                if len(out) >= limit:
+                    break
+        return out
+
+    def _download_report_json(self, artifact_id: Optional[int]) -> Optional[dict]:
+        if artifact_id is None:
+            return None
+        full = os.environ.get("GITHUB_REPOSITORY", "/")
+        owner, _, repo = full.partition("/")
+        zip_url = f"{self.api_url}/repos/{owner}/{repo}/actions/artifacts/{artifact_id}/zip"
+        try:
+            resp = requests.get(zip_url, headers=self._headers(), timeout=_TIMEOUT)
+            resp.raise_for_status()
+            with zipfile.ZipFile(io.BytesIO(resp.content)) as zf:
+                with zf.open(_REPORT_JSON) as fh:
+                    return json.load(fh)
+        except (requests.RequestException, KeyError, ValueError, zipfile.BadZipFile):
+            return None

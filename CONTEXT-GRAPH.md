@@ -4,7 +4,7 @@ A compact **concept → location** memory graph for CodeGuardian AI. Purpose: fi
 the right doc/section without reading every file. Read this first; then open only
 the one `doc/...:Section` a node points to.
 
-- **Repo state:** Phase 0 + Phase 1 + Phase 2 implemented. Code under `src/codeguardian/`.
+- **Repo state:** Phase 0–3 implemented. Code under `src/codeguardian/`.
   Stack is **Python + LangGraph** (committed; overrides the docs' TypeScript
   recommendation).
 - **Authority:** for MVP conflicts, the build plan + phase docs override the
@@ -76,12 +76,14 @@ Pick the topic, open only the listed target.
 | Prompt-injection and untrusted repo text rules | WFI §19 ; PLAN "Prompt Safety Rules" ; ROOT "Strict rules" |
 | Build prompt token-saving rules | This file, "Build prompt preflight" |
 
-## Code map (Phase 1–2)
+## Code map (Phase 1–3)
 
 Python package at `src/codeguardian/`. Stack: Python + LangGraph + Pydantic.
 
 | If you need… | Go to |
 |---|---|
+| `@codeguardian` command parser / permissions / reply handlers / plan logic | `src/codeguardian/commands/parser.py`, `commands/permissions.py`, `commands/handlers.py`, `commands/loop.py` |
+| Comment-event parsing / artifact retrieval / reply idempotency / get_pull | `src/codeguardian/github/events.py` (`parse_comment_event`), `github/client.py` (`latest_reports`, `already_replied`, `get_pull`) |
 | Data contracts (Finding/Report/PrContext/RepositoryContext/enums) | `src/codeguardian/models.py` |
 | Policy loader + defaults (modes, thresholds, noise, architecture rules) | `src/codeguardian/policy.py` |
 | PR diff from git / file classification | `src/codeguardian/pr/diff.py`, `pr/classify.py` |
