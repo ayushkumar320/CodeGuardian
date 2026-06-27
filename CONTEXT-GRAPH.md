@@ -4,13 +4,13 @@ A compact **concept → location** memory graph for CodeGuardian AI. Purpose: fi
 the right doc/section without reading every file. Read this first; then open only
 the one `doc/...:Section` a node points to.
 
-- **Repo state:** documentation-only. No application code exists yet.
+- **Repo state:** Phase 0 + Phase 1 implemented. Code under `src/codeguardian/`.
+  Stack is **Python + LangGraph** (committed; overrides the docs' TypeScript
+  recommendation).
 - **Authority:** for MVP conflicts, the build plan + phase docs override the
   blueprint. See [CLAUDE.md](CLAUDE.md) strict rules.
 - **Maintenance:** update the relevant node whenever you add a doc or create code.
-  When code lands, replace doc-only nodes with a Tree-sitter repo-map or code-RAG
-  index (aider repo-map / ctags / a code-RAG MCP) — that is the right token-saving
-  tool for source, this file is the right one for docs.
+  See "Code map (Phase 1)" below for the source layout.
 
 ## Files (nodes)
 
@@ -20,7 +20,8 @@ the one `doc/...:Section` a node points to.
 | BP | [doc/CodeGuardian-AI-Blueprint.md](doc/CodeGuardian-AI-Blueprint.md) | Long-term product + engineering vision (the end state) |
 | PLAN | [doc/Phase-Wise-Build-Plan.md](doc/Phase-Wise-Build-Plan.md) | GitHub-Actions-first MVP plan (what to build now) |
 | BIDX | [doc/build/README.md](doc/build/README.md) | Index + build order for the phase docs |
-| P0 | [doc/build/phase-0-product-foundation.md](doc/build/phase-0-product-foundation.md) | Product contract, GitHub-native UX |
+| P0 | [doc/build/phase-0-product-foundation.md](doc/build/phase-0-product-foundation.md) | Product contract spec, GitHub-native UX |
+| P0C | [doc/build/phase-0-product-contract.md](doc/build/phase-0-product-contract.md) | **Realized** Phase 0 contract: journey, rubric, blocking, comment/check copy, commands, tech foundation |
 | P1 | [doc/build/phase-1-github-actions-pr-checker.md](doc/build/phase-1-github-actions-pr-checker.md) | First working PR risk checker MVP |
 | P2 | [doc/build/phase-2-langgraph-agentic-ai.md](doc/build/phase-2-langgraph-agentic-ai.md) | Multi-agent LangGraph workflow |
 | P3 | [doc/build/phase-3-pr-conversation-loop.md](doc/build/phase-3-pr-conversation-loop.md) | `@codeguardian` in-PR commands |
@@ -54,6 +55,9 @@ Pick the topic, open only the listed target.
 | **Model routing Groq→HF→deterministic** | PLAN "Model Strategy" |
 | PR merge-page output contract (example check) | PLAN "GitHub PR Merge Page Output Contract" |
 | Definition of MVP done | PLAN "Definition Of Done" ; BIDX bottom |
+| **Realized product contract (check states, score rubric, blocking modes, sticky comment, commands, data contracts)** | P0C |
+| Check conclusion mapping (success/neutral/action_required/failure) per mode | P0C §A2, §A5 |
+| Finding / Report / PrContext / State TypeScript contracts | P0C §B4, §B5 |
 | Build order between phases | BIDX "Recommended Build Order" |
 | Risk report / finding schema | P1 "Finding Schema" ; P4 "Finding schema" |
 | LangGraph node list / state contract | P1 "LangGraph MVP Nodes" ; P2 "LangGraph State Contract" |
@@ -71,6 +75,26 @@ Pick the topic, open only the listed target.
 | Suppression accountability | WFI §14 ; P3 "Command Rules" ; P4 "Policy File" |
 | Prompt-injection and untrusted repo text rules | WFI §19 ; PLAN "Prompt Safety Rules" ; ROOT "Strict rules" |
 | Build prompt token-saving rules | This file, "Build prompt preflight" |
+
+## Code map (Phase 1)
+
+Python package at `src/codeguardian/`. Stack: Python + LangGraph + Pydantic.
+
+| If you need… | Go to |
+|---|---|
+| Data contracts (Finding/Report/PrContext/enums) | `src/codeguardian/models.py` |
+| Policy file loader + defaults (modes, thresholds, noise) | `src/codeguardian/policy.py` |
+| PR diff from git / file classification | `src/codeguardian/pr/diff.py`, `pr/classify.py` |
+| Deterministic analyzers (import blast radius, missing tests) | `src/codeguardian/analyzers/imports.py`, `analyzers/tests.py` |
+| Risk scoring (confidence-weighted aggregate) | `src/codeguardian/scoring.py` |
+| Provider router Groq→HF→deterministic | `src/codeguardian/providers.py` |
+| Secret redaction / untrusted-text fencing | `src/codeguardian/security.py` |
+| LangGraph state / nodes / graph builder | `src/codeguardian/graph/state.py`, `graph/nodes.py`, `graph/build.py` |
+| Check summary / sticky comment / artifacts | `src/codeguardian/report.py` |
+| GitHub event parsing + REST client | `src/codeguardian/github/events.py`, `github/client.py` |
+| Action entrypoint (publish + exit code) | `src/codeguardian/__main__.py` |
+| Action metadata / example workflow / policy | `action.yml`, `.github/workflows/codeguardian.yml`, `.codeguardian/policy.yml` |
+| Tests | `tests/` |
 
 ## Build prompt preflight
 
