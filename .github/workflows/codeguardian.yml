@@ -31,7 +31,7 @@ jobs:
 
       - name: CodeGuardian
         uses: ./
-        env:
+        with:
           # Optional — absence triggers the next fallback (Groq -> HF -> deterministic).
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          groq-api-key: ${{ secrets.GROQ_API_KEY }}
+          hf-token: ${{ secrets.HF_TOKEN }}

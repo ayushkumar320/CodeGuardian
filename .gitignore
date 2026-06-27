@@ -7,3 +7,4 @@ build/
 .pytest_cache/
 codeguardian-report.json
 codeguardian-report.md
+memory.jsonl

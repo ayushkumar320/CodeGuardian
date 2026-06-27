@@ -11,11 +11,11 @@ The product goal is simple: every pull request should answer:
 - Is this safe to merge?
 - What should the developer do next?
 
-This repository contains the startup-level product and technical blueprint for CodeGuardian AI **plus a working Phase 1 MVP** (a GitHub Action that runs deterministic PR risk analysis orchestrated by LangGraph, with zero model keys required). The complete detailed blueprint is available in [doc/CodeGuardian-AI-Blueprint.md](doc/CodeGuardian-AI-Blueprint.md).
+This repository contains the startup-level product and technical blueprint for CodeGuardian AI **plus the complete MVP implementation (Phases 0–6)** — a GitHub Action that runs deterministic PR risk analysis orchestrated by LangGraph, with zero model keys required. The complete detailed blueprint is available in [doc/CodeGuardian-AI-Blueprint.md](doc/CodeGuardian-AI-Blueprint.md).
 
-## Quick start (Phase 1 MVP)
+## Quick start
 
-Add CodeGuardian to a repo's PRs:
+Add CodeGuardian to a repo's PRs (full guide: **[INSTALL.md](INSTALL.md)**):
 
 ```yaml
 # .github/workflows/codeguardian.yml
@@ -23,8 +23,10 @@ name: CodeGuardian Risk
 on:
   pull_request:
     types: [opened, reopened, synchronize, ready_for_review]
+  issue_comment:
+    types: [created]
 permissions:
-  contents: read
+  contents: write       # write only for the codeguardian-memory branch
   pull-requests: write
   checks: write
   issues: write
@@ -36,10 +38,14 @@ jobs:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
       - uses: your-org/CodeGuardian@v0
-        env:
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}  # optional
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}          # optional
+        with:
+          groq-api-key: ${{ secrets.GROQ_API_KEY }}  # optional
+          hf-token: ${{ secrets.HF_TOKEN }}          # optional
 ```
+
+Setup, configuration reference, and the advisory→guarded→strict rollout are in
+**[INSTALL.md](INSTALL.md)**; see also **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)**
+and **[CHANGELOG.md](CHANGELOG.md)**.
 
 Provider fallback is **Groq → Hugging Face → deterministic**; with no keys the
 deterministic path still produces the full score and recommendations (the LLM

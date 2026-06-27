@@ -15,16 +15,18 @@ Quick reference for where the build is. Update this when a phase ships.
 | P2 | LangGraph agentic AI (per-domain agents) | ✅ done — parallel agent graph, API/DB/arch analyzers |
 | P3 | `@codeguardian` PR conversation loop | ✅ done — command parser, handlers, recheck/ignore |
 | P4 | DB / API / architecture analyzers (deep) + policy | ✅ done — types/layers/cycles/spec-drift, richer policy |
-| P5 | GitHub-native memory & history | ✅ done — branch-backed memory, similarity retrieval, history node, 55 tests green |
-| **P6** | **Packaging, distribution, adoption** | **▶ NEXT — start here** |
+| P5 | GitHub-native memory & history | ✅ done — branch-backed memory, similarity retrieval, history node |
+| P6 | Packaging, distribution, adoption | ✅ done — Action inputs, CI, INSTALL/TROUBLESHOOTING/CHANGELOG/RELEASING |
 
-## Next up: Phase 6 — packaging, distribution, adoption
+**MVP complete (Phases 0–6).** Next is hardening + a real release tag, or post-MVP
+items (see below).
 
-Make CodeGuardian easy to install, configure, and trust as a reusable Action.
+## Next up: hardening / release
 
-- **Read first:** CONTEXT-GRAPH.md → then ROOT, PLAN, P6, P1.
-- **Goal:** Marketplace-ready `action.yml` (pin install, not pip-from-source on
-  every run); minimal example workflow + starter policy; onboarding +
-  troubleshooting guide; versioning/release process; CI validating the Action on
-  fixture PR diffs; document Groq/HF setup and the zero-key default.
-- **Keep working:** zero-key deterministic default, quiet-by-default UX.
+The build plan (Phases 0–6) is implemented. Remaining work is operational:
+
+- Cut the first real release: tag `v0.1.0` + moving `v0` (see RELEASING.md).
+- Validate on a live PR: required-check gating, `recheck` fetching the PR head,
+  and the `codeguardian-memory` branch push under real permissions.
+- Post-MVP (only if asked — out of scope per CLAUDE.md): Python/other languages,
+  Neo4j graph, hosted dashboard/DB, learned ML risk model, SSO.

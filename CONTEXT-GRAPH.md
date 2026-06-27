@@ -4,7 +4,7 @@ A compact **concept → location** memory graph for CodeGuardian AI. Purpose: fi
 the right doc/section without reading every file. Read this first; then open only
 the one `doc/...:Section` a node points to.
 
-- **Repo state:** Phase 0–5 implemented. Code under `src/codeguardian/`.
+- **Repo state:** MVP complete (Phase 0–6). Code under `src/codeguardian/`.
   Stack is **Python + LangGraph** (committed; overrides the docs' TypeScript
   recommendation).
 - **Authority:** for MVP conflicts, the build plan + phase docs override the
@@ -107,7 +107,8 @@ Python package at `src/codeguardian/`. Stack: Python + LangGraph + Pydantic.
 | Check summary / sticky comment / artifacts | `src/codeguardian/report.py` |
 | GitHub event parsing + REST client | `src/codeguardian/github/events.py`, `github/client.py` |
 | Action entrypoint (publish + exit code) | `src/codeguardian/__main__.py` |
-| Action metadata / example workflow / policy | `action.yml`, `.github/workflows/codeguardian.yml`, `.codeguardian/policy.yml` |
+| Action metadata (inputs) / example workflow / CI / policy | `action.yml`, `.github/workflows/codeguardian.yml`, `.github/workflows/ci.yml`, `.codeguardian/policy.yml` |
+| Install / troubleshooting / changelog / release docs | `INSTALL.md`, `TROUBLESHOOTING.md`, `CHANGELOG.md`, `RELEASING.md` |
 | Tests | `tests/` |
 
 ## Build prompt preflight

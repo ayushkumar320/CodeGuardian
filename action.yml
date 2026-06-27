@@ -1,8 +1,27 @@
 name: "CodeGuardian AI"
 description: "Know what breaks before you merge. GitHub-native pre-merge PR risk checker."
+author: "CodeGuardian"
 branding:
   icon: "shield"
   color: "blue"
+
+inputs:
+  groq-api-key:
+    description: "Optional Groq API key for fast LLM summaries. Absent -> next fallback."
+    required: false
+    default: ""
+  hf-token:
+    description: "Optional Hugging Face token (fallback LLM + embeddings). Absent -> deterministic."
+    required: false
+    default: ""
+  github-token:
+    description: "Token used to publish the check and PR comment."
+    required: false
+    default: ${{ github.token }}
+  python-version:
+    description: "Python version to run CodeGuardian with."
+    required: false
+    default: "3.11"
 
 runs:
   using: "composite"
@@ -10,18 +29,19 @@ runs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.11"
+        python-version: ${{ inputs.python-version }}
+        cache: "pip"
 
     - name: Install CodeGuardian
       shell: bash
-      run: pip install --quiet "${{ github.action_path }}"
+      run: pip install --quiet --disable-pip-version-check "${{ github.action_path }}"
 
     - name: Run CodeGuardian
       shell: bash
       env:
-        GITHUB_TOKEN: ${{ github.token }}
-        GROQ_API_KEY: ${{ env.GROQ_API_KEY }}
-        HF_TOKEN: ${{ env.HF_TOKEN }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        GROQ_API_KEY: ${{ inputs.groq-api-key }}
+        HF_TOKEN: ${{ inputs.hf-token }}
         CODEGUARDIAN_OUT: ${{ runner.temp }}/codeguardian
       run: python -m codeguardian
 

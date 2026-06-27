@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+      - name: Install (with dev deps)
+        run: pip install -e ".[dev]"
+      - name: Run tests (integration fixtures build real git repos)
+        run: pytest -q
+
+  action-smoke:
+    # Validates the packaged Action runs in deterministic mode with no keys.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run CodeGuardian Action (deterministic, no secrets)
+        uses: ./

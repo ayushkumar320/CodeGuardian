@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import tempfile
 from typing import Protocol
 
 from .record import MemoryRecord
@@ -64,6 +65,10 @@ class GitBranchMemoryStore:
             capture_output=True, text=True, check=check,
         )
 
+    @staticmethod
+    def _git_at(cwd: str, *args: str) -> subprocess.CompletedProcess:
+        return subprocess.run(["git", "-C", cwd, *args], capture_output=True, text=True)
+
     def load(self) -> list[MemoryRecord]:
         try:
             self._git("fetch", "origin", self.branch)
@@ -83,19 +88,35 @@ class GitBranchMemoryStore:
         return out
 
     def append(self, record: MemoryRecord) -> None:
+        # Only mutate git inside GitHub Actions — never touch a developer's repo
+        # during a local run.
+        if os.environ.get("GITHUB_ACTIONS") != "true":
+            print("CodeGuardian: memory write skipped (not running in GitHub Actions).")
+            return
+
         existing = self.load()
         lines = [r.model_dump_json() for r in existing] + [record.model_dump_json()]
         content = "\n".join(lines) + "\n"
+        msg = f"memory: PR #{record.pr_number} @ {record.head_sha[:7]}"
+
+        # Commit on an isolated worktree so the checked-out branch is never
+        # modified. Best-effort: any failure is logged and skipped.
+        wt = tempfile.mkdtemp(prefix="cg-memory-")
         try:
-            # Stage the file content onto the memory branch using a worktree-free
-            # plumbing flow would be ideal; for MVP we write+commit+push directly.
-            path = os.path.join(self.repo_root, _MEMORY_FILE)
-            with open(path, "w", encoding="utf-8") as fh:
+            has_remote = self._git("rev-parse", "--verify", f"origin/{self.branch}").returncode == 0
+            if has_remote:
+                self._git("worktree", "add", "-B", self.branch, wt, f"origin/{self.branch}")
+            else:
+                self._git("worktree", "add", "--detach", wt)
+                self._git_at(wt, "checkout", "--orphan", self.branch)
+                self._git_at(wt, "reset", "--hard")
+            with open(os.path.join(wt, _MEMORY_FILE), "w", encoding="utf-8") as fh:
                 fh.write(content)
-            self._git("add", _MEMORY_FILE)
-            self._git("-c", "user.email=codeguardian@users.noreply.github.com",
-                      "-c", "user.name=CodeGuardian",
-                      "commit", "-m", f"memory: PR #{record.pr_number} @ {record.head_sha[:7]}")
-            self._git("push", "origin", f"HEAD:{self.branch}")
+            self._git_at(wt, "add", _MEMORY_FILE)
+            self._git_at(wt, "-c", "user.email=codeguardian@users.noreply.github.com",
+                         "-c", "user.name=CodeGuardian", "commit", "-m", msg)
+            self._git_at(wt, "push", "origin", f"{self.branch}:{self.branch}")
         except Exception as exc:  # noqa: BLE001
             print(f"CodeGuardian: memory append skipped: {exc}")
+        finally:
+            self._git("worktree", "remove", "--force", wt)
