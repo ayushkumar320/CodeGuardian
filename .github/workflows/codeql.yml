@@ -15,8 +15,13 @@ jobs:
   analyze:
     name: Analyze (python)
     runs-on: ubuntu-latest
+    # Dependabot PRs run with a read-only GITHUB_TOKEN, so the SARIF upload
+    # (security-events: write) can't succeed there. Skip them — the same code is
+    # scanned on push to main when the PR merges.
+    if: github.actor != 'dependabot[bot]'
     permissions:
-      security-events: write  # required to upload CodeQL results
+      security-events: write  # upload CodeQL results
+      actions: read           # CodeQL reads the workflow run (get-a-workflow-run)
       contents: read
     steps:
       - name: Checkout
