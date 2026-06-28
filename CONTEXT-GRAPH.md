@@ -75,9 +75,12 @@ Pick the topic, open only the listed target.
 | Supply-chain hardening (SHA-pinned actions, Dependabot, CodeQL) | P9 ; `.github/workflows/*.yml` + `action.yml` (SHA pins) ; `.github/dependabot.yml` ; `.github/workflows/codeql.yml` |
 | SBOM / signed releases (release-time supply chain) | P9 "Deliverables" ; deferred to P11 release workflow ; [RELEASING.md](doc/RELEASING.md) |
 | Performance bottlenecks to measure first | P10 "Current cost centers (to measure first)" |
-| Shared import graph / bounded repo walk / batched diff parsing | P10 "Scope", "Deliverables" |
-| Large-diff caps / soft timeout / partial-result publishing | P10 "Scope", "Deliverables" |
-| Memory retention / compaction policy | P10 "Scope", "Deliverables" ; `src/codeguardian/policy.py` (`Memory`) ; `src/codeguardian/memory/*` |
+| Shared import graph (built once, reused) | `src/codeguardian/analyzers/imports.py` (`ImportGraph`, `build_import_graph`) ; `graph/nodes.py` (`repository_context`) |
+| Bounded gitignore-aware repo walk + caps | `src/codeguardian/walk.py` (`iter_repo_files`) ; `policy.py` (`Performance`) |
+| Batched single-pass diff | `src/codeguardian/pr/diff.py` (`compute_diff`, `_split_patches`) |
+| Large-diff cap + truncation note | `graph/nodes.py` (`collect_pr_context`) ; `policy.Performance.max_diff_files` ; `models.Report.notes` |
+| Memory retention / compaction policy | `src/codeguardian/memory/store.py` (`compact_records`) ; `policy.Memory` (`max_records`, `retention_days`) |
+| Performance benchmark harness + budgets | `bench/run_bench.py` ; `bench/README.md` |
 | Release packaging choice (Docker vs locked wheels) | P11 "Scope", "Deliverables" |
 | Automated release workflow / moving `v1` tag / SemVer consumer contract | P11 "Scope", "Deliverables", "Acceptance Criteria" ; [RELEASING.md](doc/RELEASING.md) |
 | Marketplace listing assets / examples / screenshots | P11 "Scope", "Deliverables" |

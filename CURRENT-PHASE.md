@@ -22,8 +22,8 @@ runs zero-key deterministic. Detail: [archive/](doc/build/archive/).
 | **P7** | **Real-PR validation & live-API hardening** | **🟡 PARTIAL — public deterministic path validated live; remainder is a pre-release gate (see below)** |
 | P8 | Robustness & observability (never-crash, retries, job summary) | ✅ DONE — all acceptance criteria met |
 | P9 | Security & supply-chain hardening (fork-PR safety, injection corpus) | ✅ DONE — code + CI + docs landed; SBOM/signed releases deferred to P11 |
-| **P10** | **Performance & scale (shared import graph, memory compaction)** | **▶ IN PROGRESS** |
-| P11 | Release engineering & Marketplace (reproducible packaging, automation) | ⬜ pending |
+| P10 | Performance & scale (shared import graph, memory compaction) | ✅ DONE — all acceptance criteria met (minor wall-clock soft-timeout deferred) |
+| **P11** | **Release engineering & Marketplace (reproducible packaging, automation)** | **▶ NEXT** |
 | P12 | Beta, tuning & v1.0 GA | ⬜ pending |
 
 ## 🟡 Phase 7 — partially validated; remainder is a pre-release gate
@@ -136,6 +136,32 @@ fixed (`actions: read` + skip Dependabot read-only-token runs); Dependabot
 updates grouped into a single PR.
 
 Coverage: 93 tests green.
+
+## Phase 10 — performance & scale ✅ DONE
+
+All acceptance criteria met:
+
+- **Import graph built once per run** and shared across analyzers (was 4-5 full
+  repo walks; architecture alone built it twice). `imports.build_import_graph`
+  builds forward + reverse in one pass; `repository_context` builds it once and
+  passes it through state. Regression test asserts exactly one build per run.
+- **Bounded, gitignore-aware walk** (`walk.iter_repo_files`): prefers
+  `git ls-files`, skips vendored/build/minified/lockfiles, caps file count +
+  per-file size. Configurable via `policy.performance`.
+- **Batched diff**: one `git diff` split per file instead of one `git diff` per
+  changed file.
+- **Large-diff cap**: `policy.performance.max_diff_files` (default 300) truncates
+  to top-N by size with a user-visible note (`Report.notes`).
+- **Memory retention/compaction**: `memory.compact_records` bounds the branch by
+  `policy.memory.max_records` (500) + `retention_days` (180).
+- **Benchmark harness** (`bench/`): baseline + regression budgets (1k ~0.06s,
+  10k ~0.39s end-to-end, deterministic).
+
+Deferred (minor, not in acceptance criteria): a wall-clock soft timeout that
+publishes a partial result mid-run — the large-diff cap already bounds the
+dominant cost, so this is a nice-to-have for a later pass.
+
+Coverage: 114 tests green.
 
 ## Open operational items (not new phases)
 
