@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import re
+from dataclasses import dataclass, field
 
 from ..models import (
     Blocking,
@@ -48,10 +49,26 @@ def _resolve(importer: str, spec: str, all_files: set[str]) -> str | None:
     return None
 
 
-def build_reverse_imports(repo_root: str) -> dict[str, set[str]]:
-    """Map each file -> set of files that import it."""
+@dataclass
+class ImportGraph:
+    """Forward + reverse local-import maps, built in a single repo pass.
+
+    ``forward[f]``  = local files that ``f`` imports.
+    ``reverse[f]``  = local files that import ``f``.
+
+    Built once per run (Phase 10) and shared across analyzers via graph state, so
+    the repo is walked and each file read exactly once instead of 4-5 times.
+    """
+
+    forward: dict[str, set[str]] = field(default_factory=dict)
+    reverse: dict[str, set[str]] = field(default_factory=dict)
+
+
+def build_import_graph(repo_root: str) -> ImportGraph:
+    """Walk the repo once, read each code file once, build forward + reverse maps."""
     files = _iter_code_files(repo_root)
     fileset = set(f.replace(os.sep, "/") for f in files)
+    forward: dict[str, set[str]] = {f: set() for f in fileset}
     reverse: dict[str, set[str]] = {f: set() for f in fileset}
     for f in files:
         try:
@@ -63,33 +80,30 @@ def build_reverse_imports(repo_root: str) -> dict[str, set[str]]:
         for spec in _IMPORT_RE.findall(text):
             target = _resolve(importer, spec, fileset)
             if target:
+                forward[importer].add(target)
                 reverse[target].add(importer)
-    return reverse
+    return ImportGraph(forward=forward, reverse=reverse)
+
+
+def build_reverse_imports(repo_root: str) -> dict[str, set[str]]:
+    """Map each file -> set of files that import it. (Standalone; prefer
+    ``build_import_graph`` when both directions are needed.)"""
+    return build_import_graph(repo_root).reverse
 
 
 def build_forward_imports(repo_root: str) -> dict[str, set[str]]:
-    """Map each file -> set of local files it imports."""
-    files = _iter_code_files(repo_root)
-    fileset = set(f.replace(os.sep, "/") for f in files)
-    forward: dict[str, set[str]] = {f: set() for f in fileset}
-    for f in files:
-        try:
-            with open(os.path.join(repo_root, f), "r", encoding="utf-8", errors="ignore") as fh:
-                text = fh.read()
-        except OSError:
-            continue
-        importer = f.replace(os.sep, "/")
-        for spec in _IMPORT_RE.findall(text):
-            target = _resolve(importer, spec, fileset)
-            if target:
-                forward[importer].add(target)
-    return forward
+    """Map each file -> set of local files it imports. (Standalone; prefer
+    ``build_import_graph`` when both directions are needed.)"""
+    return build_import_graph(repo_root).forward
 
 
 def analyze(
-    repo_root: str, changed: list[DiffFile], high_risk_paths: list[str]
+    repo_root: str,
+    changed: list[DiffFile],
+    high_risk_paths: list[str],
+    graph: ImportGraph | None = None,
 ) -> list[Finding]:
-    reverse = build_reverse_imports(repo_root)
+    reverse = (graph or build_import_graph(repo_root)).reverse
     findings: list[Finding] = []
     idx = 1
 

@@ -6,6 +6,13 @@ All notable changes to CodeGuardian AI. Format based on
 
 ## [Unreleased]
 
+### Performance
+- **Import graph built once per run** (Phase 10): the dependency, test, types, and
+  architecture analyzers previously each rebuilt the JS/TS import graph (4-5 full
+  repo walks per run, architecture twice on its own). It is now built a single
+  time in `repository_context` and shared via graph state. New
+  `imports.build_import_graph` constructs forward + reverse maps in one pass.
+
 ### Changed
 - **Command trigger is now `/codeguardian`** (was `@codeguardian`). The `@` form
   is auto-linked by the GitHub UI to whatever account owns that username,

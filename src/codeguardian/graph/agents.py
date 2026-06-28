@@ -51,7 +51,8 @@ def dependency_agent(state: CodeGuardianState) -> dict:
     return _safe(
         "dependency",
         lambda: imports_analyzer.analyze(
-            state["repo_root"], state["diff"], state["policy"].high_risk_paths
+            state["repo_root"], state["diff"], state["policy"].high_risk_paths,
+            graph=state.get("import_graph"),
         ),
     )
 
@@ -62,7 +63,8 @@ def test_impact_agent(state: CodeGuardianState) -> dict:
     return _safe(
         "test",
         lambda: tests_analyzer.analyze(
-            state["repo_root"], state["diff"], state["policy"].test_suite_mappings
+            state["repo_root"], state["diff"], state["policy"].test_suite_mappings,
+            graph=state.get("import_graph"),
         ),
     )
 
@@ -70,7 +72,12 @@ def test_impact_agent(state: CodeGuardianState) -> dict:
 def types_agent(state: CodeGuardianState) -> dict:
     if _skip_docs_only(state):
         return {}
-    return _safe("types", lambda: types_analyzer.analyze(state["repo_root"], state["diff"]))
+    return _safe(
+        "types",
+        lambda: types_analyzer.analyze(
+            state["repo_root"], state["diff"], graph=state.get("import_graph")
+        ),
+    )
 
 
 def api_contract_agent(state: CodeGuardianState) -> dict:
@@ -91,7 +98,8 @@ def architecture_agent(state: CodeGuardianState) -> dict:
     return _safe(
         "architecture",
         lambda: arch_analyzer.analyze(
-            state["repo_root"], state["diff"], state["policy"].architecture
+            state["repo_root"], state["diff"], state["policy"].architecture,
+            graph=state.get("import_graph"),
         ),
     )
 

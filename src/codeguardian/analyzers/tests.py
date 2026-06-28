@@ -22,7 +22,7 @@ from ..models import (
 )
 from ..globs import glob_match
 from ..policy import TestSuite
-from .imports import build_reverse_imports
+from .imports import ImportGraph, build_import_graph
 
 _CODE_EXT = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs")
 _TEST_MARKERS = (".test.", ".spec.", "__tests__/", "/tests/", "/test/")
@@ -44,9 +44,10 @@ def _candidate_tests(path: str) -> list[str]:
 
 
 def analyze(repo_root: str, changed: list[DiffFile],
-            suite_mappings: list[TestSuite] | None = None) -> list[Finding]:
+            suite_mappings: list[TestSuite] | None = None,
+            graph: ImportGraph | None = None) -> list[Finding]:
     suite_mappings = suite_mappings or []
-    reverse = build_reverse_imports(repo_root)
+    reverse = (graph or build_import_graph(repo_root)).reverse
     findings: list[Finding] = []
     idx = 1
 

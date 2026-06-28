@@ -21,7 +21,7 @@ from ..models import (
 )
 from ..globs import glob_match
 from ..policy import Architecture, Layer
-from .imports import _IMPORT_RE, build_forward_imports
+from .imports import _IMPORT_RE, ImportGraph, build_import_graph
 
 _CODE_EXT = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs")
 
@@ -44,9 +44,19 @@ def _layer_of(path: str, layers: list[Layer]) -> Layer | None:
     return None
 
 
-def analyze(repo_root: str, changed: list[DiffFile], arch: Architecture) -> list[Finding]:
+def analyze(repo_root: str, changed: list[DiffFile], arch: Architecture,
+            graph: ImportGraph | None = None) -> list[Finding]:
     findings: list[Finding] = []
     idx = [1]  # mutable counter shared by helpers
+    # Build (or reuse) the forward import map once; both layer-direction and
+    # circular-dependency checks below share it instead of rebuilding twice.
+    _forward: dict[str, set[str]] | None = None
+
+    def forward_map() -> dict[str, set[str]]:
+        nonlocal _forward
+        if _forward is None:
+            _forward = (graph or build_import_graph(repo_root)).forward
+        return _forward
 
     def add(path, title, summary, action):
         findings.append(
@@ -83,7 +93,7 @@ def analyze(repo_root: str, changed: list[DiffFile], arch: Architecture) -> list
 
     # 2. Layer-direction violations (need resolved targets -> forward graph).
     if arch.layers:
-        forward = build_forward_imports(repo_root)
+        forward = forward_map()
         for f in code_changed:
             norm = f.path.replace(os.sep, "/")
             src_layer = _layer_of(norm, arch.layers)
@@ -101,7 +111,7 @@ def analyze(repo_root: str, changed: list[DiffFile], arch: Architecture) -> list
 
     # 3. Circular dependencies involving a changed file.
     if arch.detect_circular and code_changed:
-        forward = build_forward_imports(repo_root)
+        forward = forward_map()
         changed_set = {f.path.replace(os.sep, "/") for f in code_changed}
         seen_cycles: set[frozenset] = set()
         for start in changed_set:

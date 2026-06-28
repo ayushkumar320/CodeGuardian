@@ -17,7 +17,7 @@ from ..models import (
     Finding,
     Severity,
 )
-from .imports import build_reverse_imports
+from .imports import ImportGraph, build_import_graph
 
 _TYPE_EXPORT_RE = re.compile(
     r"export\s+(?:declare\s+)?(?:type|interface|enum|class)\s+([A-Za-z_]\w*)"
@@ -48,11 +48,12 @@ def _removed_types(patch: str | None) -> list[str]:
     return [n for n in names if n not in added]
 
 
-def analyze(repo_root: str, changed: list[DiffFile]) -> list[Finding]:
+def analyze(repo_root: str, changed: list[DiffFile],
+            graph: ImportGraph | None = None) -> list[Finding]:
     targets = [f for f in changed if _is_types_file(f.path)]
     if not targets:
         return []
-    reverse = build_reverse_imports(repo_root)
+    reverse = (graph or build_import_graph(repo_root)).reverse
     findings: list[Finding] = []
     idx = 1
     for f in targets:

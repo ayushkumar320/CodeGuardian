@@ -28,3 +28,4 @@ class CodeGuardianState(TypedDict, total=False):
     report: Report
     narrative: str
     memory_store: object  # optional MemoryStore for historical retrieval
+    import_graph: object  # shared ImportGraph, built once in repository_context

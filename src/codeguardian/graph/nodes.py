@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 
+from ..analyzers.imports import build_import_graph
 from ..models import FileCategory, RepositoryContext
 from ..pr.diff import compute_diff
 from .state import CodeGuardianState
@@ -67,7 +68,10 @@ def repository_context(state: CodeGuardianState) -> dict:
             framework_summary=sorted(frameworks),
             package_manifests=manifests[:20],
             test_files=tests[:200],
-        )
+        ),
+        # Build the import graph once here (before the parallel domain fan-out) so
+        # every analyzer shares it instead of rebuilding (Phase 10).
+        "import_graph": build_import_graph(root),
     }
 
 

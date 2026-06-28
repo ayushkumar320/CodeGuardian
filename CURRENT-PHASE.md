@@ -19,31 +19,45 @@ runs zero-key deterministic. Detail: [archive/](doc/build/archive/).
 
 | Phase | What | State |
 |-------|------|-------|
-| **P7** | **Real-PR validation & live-API hardening** | **⏸ DEFERRED — pick up later (next when resumed); only the live sandbox run remains** |
+| **P7** | **Real-PR validation & live-API hardening** | **🟡 PARTIAL — public deterministic path validated live; remainder is a pre-release gate (see below)** |
 | P8 | Robustness & observability (never-crash, retries, job summary) | ✅ DONE — all acceptance criteria met |
 | P9 | Security & supply-chain hardening (fork-PR safety, injection corpus) | ✅ DONE — code + CI + docs landed; SBOM/signed releases deferred to P11 |
-| P10 | Performance & scale (shared import graph, memory compaction) | ⬜ pending |
+| **P10** | **Performance & scale (shared import graph, memory compaction)** | **▶ IN PROGRESS** |
 | P11 | Release engineering & Marketplace (reproducible packaging, automation) | ⬜ pending |
 | P12 | Beta, tuning & v1.0 GA | ⬜ pending |
 
-## ⏸ Deferred — pick up later: Phase 7 live sandbox validation
+## 🟡 Phase 7 — partially validated; remainder is a pre-release gate
 
-> **Status (as of June 28, 2026):** intentionally deferred — I'll come back to
-> this. P8 and P9 were completed in parallel, so the **only** thing standing
-> between here and finishing P7 is running the real sandbox validation against
-> the live GitHub API. Everything code-side is ready.
+> **Status (as of June 28, 2026):** live sandbox validation was started on a real
+> public repo (`ayushkumar320/clawcode-test`). The **public, zero-key
+> deterministic path is proven**: the Action runs clean, the `CodeGuardian Risk`
+> check posts to the merge box with its rich summary, report artifacts upload, the
+> quiet-by-default path behaves correctly, and the comment command loop reaches the
+> bot and replies. **Two live-only defects were found and fixed** in the process:
 >
-> **When resuming, start here:**
-> - Quick local smoke (no token, no PR): `scripts/run-local.sh /path/to/repo` —
->   see [TESTING.md](doc/TESTING.md) Option A.
-> - Live validation: install the Action on a sandbox repo and follow
->   [doc/build/phase-7-runbook.md](doc/build/phase-7-runbook.md) — exercise
->   public, private, and **fork** PRs (Option B/C in TESTING.md). The
->   `Phase 7 Sandbox Validate` workflow + `e2e/validate_sandbox.py` are ready to
->   run via workflow_dispatch.
-> - Then mark P7 ✅ here and move to P10 (performance & scale).
+> - **pip-cache crash on non-Python consumer repos** — `setup-python cache: pip`
+>   keyed off a `requirements.txt`/`pyproject.toml` in the consumer repo and aborted
+>   the run. Removed. (`action.yml`; `tests/test_phase7_action_metadata.py`)
+> - **`@codeguardian` username collision** — the GitHub UI auto-linked the mention
+>   to an unrelated account, notifying a stranger on every command. Trigger is now
+>   **`/codeguardian`** (slash form); `@codeguardian` still accepted for back-compat.
+>   (`commands/parser.py`; `tests/test_phase7_slash_trigger.py`)
+>
+> **Decision:** the core path is proven, so the team is moving on to P10. The
+> remaining P7 validation is **deferred to a pre-release gate** (run before P11
+> release / P12 GA), not skipped.
+>
+> **Pre-release gate — must run before GA (do NOT mark P7 ✅ until then):**
+> - **findings PR** — confirm a non-zero-risk PR posts the sticky comment, updates
+>   it in place (upsert, no duplicate), and emits annotations.
+> - **command loop on `/codeguardian`** — `explain` / `tests` / `recheck` reply once.
+> - **private repo** behavior.
+> - **fork PR safety** — read-only token, no write attempts, no crash (highest-risk
+>   gate; required by strict rules).
+>   Use [doc/build/phase-7-runbook.md](doc/build/phase-7-runbook.md) +
+>   `e2e/validate_sandbox.py` (workflow_dispatch runner ready).
 
-Prove the Action against the live GitHub API before deeper hardening.
+Prove the Action against the live GitHub API before release.
 
 - **Read first:** CONTEXT-GRAPH.md → then ROOT, BIDX, P7.
 - **Goal:** install on a sandbox repo; exercise low-risk/high-risk/comment-command
