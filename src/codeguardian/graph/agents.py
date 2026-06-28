@@ -175,15 +175,26 @@ def historical_knowledge_agent(state: CodeGuardianState) -> dict:
 
 
 def recommendation_agent(state: CodeGuardianState) -> dict:
+    policy = state["policy"]
     report = state["report"]
     result = summarize(report)
     report.provider = result.provider
+    errors = list(state.get("errors", []))
     if result.provider == Provider.deterministic:
         report.deterministic_notice = (
             "CodeGuardian ran in deterministic mode because no model provider "
             "token was configured. Risk score and recommendations are based on "
             "static analysis only."
         )
-    report.errors = state.get("errors", [])
-    report.degraded = bool(report.errors)
+        # Opt-in: a repo that requires the LLM summary wants this surfaced loudly
+        # rather than silently falling back (strict rule #3 keeps it opt-in).
+        if policy.model.require_model:
+            errors.append(
+                "model: require_model is set but no provider token (GROQ_API_KEY / "
+                "HF_TOKEN) was configured; summary fell back to deterministic."
+            )
+            if policy.model.block_when_missing:
+                report.risk.blocking = True
+    report.errors = errors
+    report.degraded = bool(errors)
     return {"report": report, "narrative": result.text, "provider_usage": [f"summary:{result.provider.value}"]}

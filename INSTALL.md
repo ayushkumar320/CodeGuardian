@@ -100,6 +100,21 @@ get nicer prose:
 
 Repo → Settings → Secrets and variables → Actions → New repository secret.
 
+Setting `GROQ_API_KEY` (or `HF_TOKEN`) makes the LLM summary run on **every** PR —
+"optional" only means CodeGuardian won't crash without it. If you want a
+**guarantee** the model ran and a loud warning when a token is missing (rather
+than a silent deterministic fallback), opt in via policy:
+
+```yaml
+# .codeguardian/policy.yml
+model:
+  require_model: true        # warn (degraded) when no provider token is configured
+  block_when_missing: false  # set true to also fail the check
+```
+
+This stays opt-in so the default product — and **all fork PRs**, which never
+receive secrets — keep working with zero keys.
+
 ## 4. Configure (optional): `.codeguardian/policy.yml`
 
 Start from the [example policy](.codeguardian/policy.yml). Most teams only set

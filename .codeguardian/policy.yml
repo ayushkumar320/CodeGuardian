@@ -44,6 +44,16 @@ service_owners: []
   # - paths: "**/prisma/**"
   #   owners: ["@platform/db"]
 
+# Model provider (Groq -> Hugging Face -> deterministic).
+# CodeGuardian runs zero-key by default: deterministic analysis owns the score
+# and findings, and a model (if a token is set) only rephrases the summary.
+# Set require_model if you WANT a guarantee the LLM summary ran — a missing
+# token is then surfaced as a loud "degraded" warning instead of a silent
+# fallback. This stays opt-in: the default product never needs a token.
+model:
+  require_model: false       # true = warn when no GROQ_API_KEY / HF_TOKEN
+  block_when_missing: false  # true = also fail the check (needs require_model)
+
 # GitHub-native memory (Phase 5). Compact records persist on a repo branch so
 # CodeGuardian can answer "has this happened before?" across PRs.
 memory:

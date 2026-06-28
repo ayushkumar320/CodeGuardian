@@ -64,6 +64,17 @@ class Memory(BaseModel):
     min_similarity: float = 0.34
 
 
+class Model(BaseModel):
+    # The product runs zero-key by default (strict rule #3): deterministic
+    # analysis owns the score/findings and the model only rephrases the summary.
+    # Teams that *want* a guarantee the LLM synthesis ran (e.g. always-on Groq)
+    # can opt in here. This never makes a token a hard dependency of the
+    # baseline product — it only changes how a missing token is surfaced on
+    # repos that set it.
+    require_model: bool = False  # warn loudly when no provider token is configured
+    block_when_missing: bool = False  # also fail the check (only honored with require_model)
+
+
 class Policy(BaseModel):
     mode: Mode = Mode.advisory  # gradual rollout: advisory first
     thresholds: Thresholds = Field(default_factory=Thresholds)
@@ -72,6 +83,7 @@ class Policy(BaseModel):
     test_suite_mappings: list[TestSuite] = Field(default_factory=list)
     service_owners: list[ServiceOwner] = Field(default_factory=list)
     memory: Memory = Field(default_factory=Memory)
+    model: Model = Field(default_factory=Model)
     ignored_findings: list[str] = Field(default_factory=list)  # finding IDs pre-suppressed
     high_risk_paths: list[str] = Field(
         default_factory=lambda: [
@@ -100,6 +112,6 @@ class Policy(BaseModel):
 def _pick_known(data: dict) -> dict:
     known = {
         "mode", "thresholds", "noise", "architecture", "test_suite_mappings",
-        "service_owners", "memory", "ignored_findings", "high_risk_paths",
+        "service_owners", "memory", "model", "ignored_findings", "high_risk_paths",
     }
     return {k: v for k, v in data.items() if k in known}

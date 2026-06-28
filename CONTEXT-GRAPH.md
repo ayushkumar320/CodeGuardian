@@ -96,6 +96,7 @@ Pick the topic, open only the listed target.
 | Sticky comment vs check vs artifact publishing split | WFI §3, §12, §18 ; P1 "Publishing Contract" |
 | Noise budgets / docs-only quiet path / inline comment defaults | WFI §10, §11 ; P6 "Default Configuration" |
 | Deterministic mode behavior when no model keys exist | WFI §5 ; P2 "Model Provider Routing" |
+| Opt-in `require_model` / `block_when_missing` (guarantee LLM summary ran) | `src/codeguardian/policy.py` (`Model`) ; `graph/agents.py` (`recommendation_agent`) ; `.codeguardian/policy.yml` ; `INSTALL.md` |
 | Recheck / compare / ignore command behavior | WFI §13, §14, §17 ; P3 "Supported Commands", "Command Rules" |
 | Suppression accountability | WFI §14 ; P3 "Command Rules" ; P4 "Policy File" |
 | Progressive disclosure in reports / concise PR comment vs full artifact | WFI §3, §18 |
