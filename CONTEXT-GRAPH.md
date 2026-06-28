@@ -68,18 +68,18 @@ Pick the topic, open only the listed target.
 | Debug logging (`CODEGUARDIAN_DEBUG`, secret-safe) | P8 "Scope" ; `src/codeguardian/log.py` (`get_logger`, `debug_enabled`) |
 | Job summary writer (`$GITHUB_STEP_SUMMARY`) | P8 "Deliverables" ; `src/codeguardian/__main__.py` (`_write_job_summary`) |
 | `--selfcheck` (env, token reachability, provider) | P8 "Deliverables" ; `src/codeguardian/selfcheck.py` (`run_selfcheck`) |
-| Fork PR safety / `pull_request` vs `pull_request_target` guidance | P9 ; `INSTALL.md` "Permissions explained" ; `THREAT-MODEL.md` (T4) ; `__main__._can_publish` |
+| Fork PR safety / `pull_request` vs `pull_request_target` guidance | P9 ; `doc/INSTALL.md` "Permissions explained" ; `doc/THREAT-MODEL.md` (T4) ; `__main__._can_publish` |
 | Prompt-injection validation corpus and evidence-only model rule | P9 ; WFI §19 ; `tests/injection_corpus.py` ; `tests/test_phase9_security.py` ; `models.Finding` (evidence required) |
 | Output secret scanning before posting (egress) | P9 ; `src/codeguardian/security.py` (`safe_output`, `find_secrets`) ; `github/client.py` (`_scrub`) |
-| Secret reporting / vulnerability disclosure / security posture | `SECURITY.md` ; `THREAT-MODEL.md` |
+| Secret reporting / vulnerability disclosure / security posture | `SECURITY.md` ; `doc/THREAT-MODEL.md` |
 | Supply-chain hardening (SHA-pinned actions, Dependabot, CodeQL) | P9 ; `.github/workflows/*.yml` + `action.yml` (SHA pins) ; `.github/dependabot.yml` ; `.github/workflows/codeql.yml` |
-| SBOM / signed releases (release-time supply chain) | P9 "Deliverables" ; deferred to P11 release workflow ; [RELEASING.md](RELEASING.md) |
+| SBOM / signed releases (release-time supply chain) | P9 "Deliverables" ; deferred to P11 release workflow ; [RELEASING.md](doc/RELEASING.md) |
 | Performance bottlenecks to measure first | P10 "Current cost centers (to measure first)" |
 | Shared import graph / bounded repo walk / batched diff parsing | P10 "Scope", "Deliverables" |
 | Large-diff caps / soft timeout / partial-result publishing | P10 "Scope", "Deliverables" |
 | Memory retention / compaction policy | P10 "Scope", "Deliverables" ; `src/codeguardian/policy.py` (`Memory`) ; `src/codeguardian/memory/*` |
 | Release packaging choice (Docker vs locked wheels) | P11 "Scope", "Deliverables" |
-| Automated release workflow / moving `v1` tag / SemVer consumer contract | P11 "Scope", "Deliverables", "Acceptance Criteria" ; [RELEASING.md](RELEASING.md) |
+| Automated release workflow / moving `v1` tag / SemVer consumer contract | P11 "Scope", "Deliverables", "Acceptance Criteria" ; [RELEASING.md](doc/RELEASING.md) |
 | Marketplace listing assets / examples / screenshots | P11 "Scope", "Deliverables" |
 | Beta plan / dogfood repos / false-positive feedback loop | P12 "Scope", "Deliverables", "Acceptance Criteria" |
 | Scoring and threshold tuning for low false positives | P12 "Scope", "Deliverables" |
@@ -96,7 +96,7 @@ Pick the topic, open only the listed target.
 | Sticky comment vs check vs artifact publishing split | WFI §3, §12, §18 ; P1 "Publishing Contract" |
 | Noise budgets / docs-only quiet path / inline comment defaults | WFI §10, §11 ; P6 "Default Configuration" |
 | Deterministic mode behavior when no model keys exist | WFI §5 ; P2 "Model Provider Routing" |
-| Opt-in `require_model` / `block_when_missing` (guarantee LLM summary ran) | `src/codeguardian/policy.py` (`Model`) ; `graph/agents.py` (`recommendation_agent`) ; `.codeguardian/policy.yml` ; `INSTALL.md` |
+| Opt-in `require_model` / `block_when_missing` (guarantee LLM summary ran) | `src/codeguardian/policy.py` (`Model`) ; `graph/agents.py` (`recommendation_agent`) ; `.codeguardian/policy.yml` ; `doc/INSTALL.md` |
 | Recheck / compare / ignore command behavior | WFI §13, §14, §17 ; P3 "Supported Commands", "Command Rules" |
 | Suppression accountability | WFI §14 ; P3 "Command Rules" ; P4 "Policy File" |
 | Progressive disclosure in reports / concise PR comment vs full artifact | WFI §3, §18 |
@@ -135,7 +135,7 @@ Python package at `src/codeguardian/`. Stack: Python + LangGraph + Pydantic.
 | Egress secret-scan chokepoint before posting | `src/codeguardian/github/client.py` (`_scrub`) |
 | Prompt-injection corpus + security tests | `tests/injection_corpus.py`, `tests/test_phase9_security.py` |
 | Supply-chain config (SHA-pinned actions, Dependabot, CodeQL) | `.github/workflows/*.yml`, `.github/dependabot.yml`, `.github/workflows/codeql.yml` |
-| Security policy / threat model | `SECURITY.md`, `THREAT-MODEL.md` |
+| Security policy / threat model | `SECURITY.md`, `doc/THREAT-MODEL.md` |
 | LangGraph state (reducers) / entry+context nodes / domain+synthesis agents / builder | `src/codeguardian/graph/state.py`, `graph/nodes.py`, `graph/agents.py`, `graph/build.py` |
 | Check summary / sticky comment / artifacts | `src/codeguardian/report.py` |
 | GitHub event parsing + REST client | `src/codeguardian/github/events.py`, `github/client.py` |
@@ -144,8 +144,8 @@ Python package at `src/codeguardian/`. Stack: Python + LangGraph + Pydantic.
 | `--selfcheck` diagnostics (env / token / provider) | `src/codeguardian/selfcheck.py` |
 | Action entrypoint (publish + exit code, failure boundary, job summary, `--selfcheck` dispatch) | `src/codeguardian/__main__.py` |
 | Action metadata (inputs) / example workflow / CI / policy | `action.yml`, `.github/workflows/codeguardian.yml`, `.github/workflows/ci.yml`, `.codeguardian/policy.yml` |
-| Install / troubleshooting / changelog / release docs | `INSTALL.md`, `TROUBLESHOOTING.md`, `CHANGELOG.md`, `RELEASING.md` |
-| How to run/test (local no-token, sandbox Action, e2e harness) | `TESTING.md` ; `scripts/run-local.sh` ; `e2e/` ; `doc/build/phase-7-runbook.md` |
+| Install / troubleshooting / changelog / release docs | `doc/INSTALL.md`, `doc/TROUBLESHOOTING.md`, `CHANGELOG.md`, `doc/RELEASING.md` |
+| How to run/test (local no-token, sandbox Action, e2e harness) | `doc/TESTING.md` ; `scripts/run-local.sh` ; `e2e/` ; `doc/build/phase-7-runbook.md` |
 | Tests | `tests/` |
 
 ## Build prompt preflight
@@ -167,7 +167,7 @@ Recommended phase node sets (active = production plan; MVP nodes are in archive/
 | Robustness/observability | ROOT, BIDX, P8, Code map |
 | Security hardening | ROOT, BIDX, P9, WFI |
 | Performance/scale | ROOT, BIDX, P10, Code map |
-| Release/Marketplace | ROOT, BIDX, P11, RELEASING.md |
+| Release/Marketplace | ROOT, BIDX, P11, doc/RELEASING.md |
 | Beta/GA | ROOT, BIDX, P12 |
 | Workflow/report UX refinements | ROOT, WFI, then the matching active phase doc |
 | (MVP history) any 0–6 topic | archive/ + Code map |

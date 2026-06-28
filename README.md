@@ -25,7 +25,7 @@ model keys required.
 
 ## Quick Start
 
-Add CodeGuardian to a repo's PRs (full guide: [INSTALL.md](INSTALL.md)):
+Add CodeGuardian to a repo's PRs (full guide: [INSTALL.md](doc/INSTALL.md)):
 
 ```yaml
 # .github/workflows/codeguardian.yml
@@ -64,7 +64,7 @@ dependency.
 
 > **Want to try it before installing anything?** You can run the exact same
 > analysis on any local repo with no token and no PR:
-> `scripts/run-local.sh /path/to/repo`. See [TESTING.md](TESTING.md).
+> `scripts/run-local.sh /path/to/repo`. See [TESTING.md](doc/TESTING.md).
 
 ## Product
 
@@ -151,11 +151,11 @@ Out of scope:
 
 ## Docs
 
-- [INSTALL.md](INSTALL.md) — install and configure the Action
-- [TESTING.md](TESTING.md) — **run it locally with no token**, on a sandbox repo, or via the e2e harness
+- [INSTALL.md](doc/INSTALL.md) — install and configure the Action
+- [TESTING.md](doc/TESTING.md) — **run it locally with no token**, on a sandbox repo, or via the e2e harness
 - [SECURITY.md](SECURITY.md) — security policy, vulnerability reporting, hardening
-- [THREAT-MODEL.md](THREAT-MODEL.md) — threats, mitigations, and residual risks
-- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) — common setup and runtime issues
+- [THREAT-MODEL.md](doc/THREAT-MODEL.md) — threats, mitigations, and residual risks
+- [TROUBLESHOOTING.md](doc/TROUBLESHOOTING.md) — common setup and runtime issues
 - [doc/GitHub-PR-User-Flowmap.md](doc/GitHub-PR-User-Flowmap.md) — merge-page product behavior
 - [doc/build/README.md](doc/build/README.md) — active production roadmap to v1.0
 - [doc/Workflow-Improvements.md](doc/Workflow-Improvements.md) — workflow and report refinements

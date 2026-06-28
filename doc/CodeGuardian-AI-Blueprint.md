@@ -2,7 +2,7 @@
 
 > Note: this file describes the **long-term vision** and deferred architecture.
 > The **current product** is the GitHub-Action-native PR merge-page experience
-> documented in [README.md](../README.md), [INSTALL.md](../INSTALL.md), and the
+> documented in [README.md](../README.md), [INSTALL.md](INSTALL.md), and the
 > active production plan under [doc/build/](build/).
 
 Tagline: "Know what breaks before you merge."

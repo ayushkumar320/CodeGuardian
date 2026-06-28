@@ -16,7 +16,7 @@ a moving major tag.
 ## Cutting a release
 
 1. Ensure `main` is green (CI: tests on 3.11/3.12 + Action smoke run).
-2. Move the `[Unreleased]` section of [CHANGELOG.md](CHANGELOG.md) under the new
+2. Move the `[Unreleased]` section of [CHANGELOG.md](../CHANGELOG.md) under the new
    version with today's date; bump `version` in `pyproject.toml`.
 3. Commit, then tag the immutable version and move the major alias:
 

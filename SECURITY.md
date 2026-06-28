@@ -39,7 +39,7 @@ Supported for fixes: the latest released `v1` line and `main`.
   skipped rather than failing noisily.
 - **Least privilege.** The Action requests the minimum `permissions:`; cross-PR
   memory (`contents: write`) is optional and can be disabled. See the
-  "Permissions explained" section in [INSTALL.md](INSTALL.md).
+  "Permissions explained" section in [INSTALL.md](doc/INSTALL.md).
 - **Never crash, never block on our own bug.** Internal errors degrade to a neutral
   check and exit 0 (Phase 8), so a CodeGuardian failure can't be used to block or
   force a merge.
@@ -52,4 +52,4 @@ Supported for fixes: the latest released `v1` line and `main`.
 - **CodeQL** ([.github/workflows/codeql.yml](.github/workflows/codeql.yml)) scans
   this repository on push, PR, and weekly.
 
-See [THREAT-MODEL.md](THREAT-MODEL.md) for the detailed threat analysis.
+See [THREAT-MODEL.md](doc/THREAT-MODEL.md) for the detailed threat analysis.

@@ -43,6 +43,6 @@ hosted LLM to rephrase a summary, and posts a check run + sticky comment.
 
 - A novel secret format not matched by the redaction patterns could pass egress
   scanning. Mitigation: patterns are conservative and reviewed; report gaps via
-  [SECURITY.md](SECURITY.md).
+  [SECURITY.md](../SECURITY.md).
 - A model provider could log prompts on their side. Mitigation: only redacted,
   structured facts (never raw source) are sent, and the provider is optional.

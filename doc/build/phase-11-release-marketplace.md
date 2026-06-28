@@ -16,7 +16,7 @@ Included:
 - **Release automation:** a tag-triggered workflow that runs CI, builds the
   artifact, generates release notes from CHANGELOG, creates the GitHub Release,
   and moves the `v1` major tag.
-- **Versioning policy:** finalize SemVer rules (already drafted in RELEASING.md);
+- **Versioning policy:** finalize SemVer rules (already drafted in ../RELEASING.md);
   document the `@v1` vs `@v1.2.3` consumer contract.
 - **Marketplace listing:** `action.yml` metadata polish, categories, an icon,
   README badges, screenshots/GIF of a real PR run, and a concise listing
@@ -40,7 +40,7 @@ Excluded:
 
 ```text
 You are productionizing CodeGuardian's release pipeline (Phase 11).
-Read CONTEXT-GRAPH.md, then ROOT, PLAN, archived P6, RELEASING.md, and the code map.
+Read CONTEXT-GRAPH.md, then ROOT, PLAN, archived P6, ../RELEASING.md, and the code map.
 
 Deliver:
 - Reproducible, fast dependency packaging (Docker container action or pinned
