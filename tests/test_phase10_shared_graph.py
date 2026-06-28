@@ -52,9 +52,9 @@ def test_import_graph_built_once_per_run(tmp_path, monkeypatch):
     calls = {"n": 0}
     real = build_import_graph
 
-    def counting(repo_root):
+    def counting(repo_root, *args, **kwargs):
         calls["n"] += 1
-        return real(repo_root)
+        return real(repo_root, *args, **kwargs)
 
     # Patch the name the node uses, so any analyzer that *also* fell back to
     # building its own graph would bump the counter past 1.

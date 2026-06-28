@@ -64,6 +64,13 @@ class Memory(BaseModel):
     min_similarity: float = 0.34
 
 
+class Performance(BaseModel):
+    # Bound the repo walk so large monorepos stay fast (Phase 10). The walk is
+    # gitignore-aware and skips vendored/build/minified files regardless.
+    max_files: int = 20000  # cap on files enumerated for the import graph / scan
+    max_file_bytes: int = 1_000_000  # skip files larger than this when reading
+
+
 class Model(BaseModel):
     # The product runs zero-key by default (strict rule #3): deterministic
     # analysis owns the score/findings and the model only rephrases the summary.
@@ -84,6 +91,7 @@ class Policy(BaseModel):
     service_owners: list[ServiceOwner] = Field(default_factory=list)
     memory: Memory = Field(default_factory=Memory)
     model: Model = Field(default_factory=Model)
+    performance: Performance = Field(default_factory=Performance)
     ignored_findings: list[str] = Field(default_factory=list)  # finding IDs pre-suppressed
     high_risk_paths: list[str] = Field(
         default_factory=lambda: [

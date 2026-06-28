@@ -20,6 +20,7 @@ from ..models import (
     Severity,
 )
 from ..pr.classify import matches_any
+from ..walk import DEFAULT_MAX_FILES, DEFAULT_MAX_FILE_BYTES, iter_repo_files
 
 _IMPORT_RE = re.compile(
     r"""(?:import\s[^'"]*?from\s*|import\s*|require\(\s*|export\s[^'"]*?from\s*)['"]([^'"]+)['"]"""
@@ -28,14 +29,14 @@ _CODE_EXT = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs")
 _RESOLVE_EXT = ["", ".ts", ".tsx", ".js", ".jsx", "/index.ts", "/index.tsx", "/index.js"]
 
 
-def _iter_code_files(repo_root: str) -> list[str]:
-    out: list[str] = []
-    for root, dirs, files in os.walk(repo_root):
-        dirs[:] = [d for d in dirs if d not in (".git", "node_modules", "dist", "build", ".next")]
-        for f in files:
-            if f.endswith(_CODE_EXT):
-                out.append(os.path.relpath(os.path.join(root, f), repo_root))
-    return out
+def _iter_code_files(
+    repo_root: str,
+    max_files: int = DEFAULT_MAX_FILES,
+    max_file_bytes: int = DEFAULT_MAX_FILE_BYTES,
+) -> list[str]:
+    return iter_repo_files(
+        repo_root, _CODE_EXT, max_files=max_files, max_file_bytes=max_file_bytes
+    )
 
 
 def _resolve(importer: str, spec: str, all_files: set[str]) -> str | None:
@@ -64,9 +65,16 @@ class ImportGraph:
     reverse: dict[str, set[str]] = field(default_factory=dict)
 
 
-def build_import_graph(repo_root: str) -> ImportGraph:
-    """Walk the repo once, read each code file once, build forward + reverse maps."""
-    files = _iter_code_files(repo_root)
+def build_import_graph(
+    repo_root: str,
+    max_files: int = DEFAULT_MAX_FILES,
+    max_file_bytes: int = DEFAULT_MAX_FILE_BYTES,
+) -> ImportGraph:
+    """Walk the repo once, read each code file once, build forward + reverse maps.
+
+    The walk is bounded (``max_files``) and gitignore-aware via :mod:`walk`.
+    """
+    files = _iter_code_files(repo_root, max_files, max_file_bytes)
     fileset = set(f.replace(os.sep, "/") for f in files)
     forward: dict[str, set[str]] = {f: set() for f in fileset}
     reverse: dict[str, set[str]] = {f: set() for f in fileset}

@@ -12,6 +12,11 @@ All notable changes to CodeGuardian AI. Format based on
   repo walks per run, architecture twice on its own). It is now built a single
   time in `repository_context` and shared via graph state. New
   `imports.build_import_graph` constructs forward + reverse maps in one pass.
+- **Bounded, gitignore-aware repo walk** (Phase 10): new `walk.iter_repo_files`
+  centralizes file enumeration — prefers `git ls-files` (respects `.gitignore`),
+  skips vendored/build/minified/lockfiles, and caps file count + per-file size.
+  The import graph and `repository_context` both use it. Caps are configurable via
+  the new `policy.performance` (`max_files`, `max_file_bytes`).
 
 ### Changed
 - **Command trigger is now `/codeguardian`** (was `@codeguardian`). The `@` form
