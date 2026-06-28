@@ -28,6 +28,9 @@ All notable changes to CodeGuardian AI. Format based on
   `memory.compact_records` drops records older than `policy.memory.retention_days`
   (default 180) and keeps the `policy.memory.max_records` (default 500) most
   recent. Applied on every append in both the local and git-branch stores.
+- **Benchmark harness** (Phase 10): `bench/run_bench.py` generates synthetic repos
+  (1k/10k/50k files) and times the import-graph build and a full run; `bench/
+  README.md` records the baseline and the regression budgets.
 
 ### Changed
 - **Command trigger is now `/codeguardian`** (was `@codeguardian`). The `@` form
