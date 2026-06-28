@@ -14,19 +14,19 @@ from ..report import merge_status
 
 HELP_TEXT = (
     "**CodeGuardian** predicts what this PR can break before merge.\n"
-    "- `@codeguardian explain` — why this risk score\n"
-    "- `@codeguardian tests` — tests to run before merge\n"
-    "- `@codeguardian why blocked` — the finding blocking merge + the fix\n"
-    "- `@codeguardian compare` — what changed since the last run\n"
-    "- `@codeguardian has this happened before?` — similar past PRs\n"
-    "- `@codeguardian recheck` — re-run the analysis (maintainers)\n"
-    "- `@codeguardian ignore <id> reason: …` — suppress a finding (maintainers)\n"
-    "- `@codeguardian summary` — repost the short report\n"
+    "- `/codeguardian explain` — why this risk score\n"
+    "- `/codeguardian tests` — tests to run before merge\n"
+    "- `/codeguardian why blocked` — the finding blocking merge + the fix\n"
+    "- `/codeguardian compare` — what changed since the last run\n"
+    "- `/codeguardian has this happened before?` — similar past PRs\n"
+    "- `/codeguardian recheck` — re-run the analysis (maintainers)\n"
+    "- `/codeguardian ignore <id> reason: …` — suppress a finding (maintainers)\n"
+    "- `/codeguardian summary` — repost the short report\n"
 )
 
 NO_REPORT = (
     "I don't have an analysis for this PR yet. Push a commit or run "
-    "`@codeguardian recheck` to generate one."
+    "`/codeguardian recheck` to generate one."
 )
 
 
@@ -109,7 +109,7 @@ def summary(report: Report) -> str:
     head = f"**CodeGuardian Risk: {_level(report)}** · {merge_status(report)}"
     if not active:
         return head + " — no findings."
-    return head + f" — {len(active)} finding(s). Use `@codeguardian explain` for detail."
+    return head + f" — {len(active)} finding(s). Use `/codeguardian explain` for detail."
 
 
 def history(report: Report) -> str:

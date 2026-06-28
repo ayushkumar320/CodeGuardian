@@ -14,7 +14,7 @@ on:
         required: false
         default: "true"
       command_body:
-        description: "Optional PR command to post and verify, e.g. @codeguardian tests"
+        description: "Optional PR command to post and verify, e.g. /codeguardian tests"
         required: false
         default: ""
 

@@ -1,7 +1,12 @@
-"""Parse `@codeguardian <command>` from a PR comment body.
+"""Parse `/codeguardian <command>` from a PR comment body.
+
+The trigger is ``/codeguardian`` (preferred) or ``@codeguardian`` (back-compat).
+The slash form is the recommended one: ``@codeguardian`` is auto-linked by the
+GitHub UI to whatever account happens to own that username, which notifies an
+unrelated person on every command. The slash form has no such collision.
 
 Returns a Command or None. Only the supported, memorable set is recognized;
-anything else that still mentions @codeguardian becomes an ``unknown`` command so
+anything else that still mentions the trigger becomes an ``unknown`` command so
 the loop can reply with help (P3 "refuse ambiguous or unsupported commands").
 """
 
@@ -12,9 +17,10 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
-MENTION = "@codeguardian"
+MENTION = "/codeguardian"
 
-_MENTION_RE = re.compile(r"@codeguardian\b", re.IGNORECASE)
+# Accept the slash form (preferred, no username collision) or the legacy @ form.
+_MENTION_RE = re.compile(r"[@/]codeguardian\b", re.IGNORECASE)
 _IGNORE_RE = re.compile(
     r"ignore\s+(?P<id>[A-Za-z0-9\-]+)(?:\s+reason:\s*(?P<reason>.+))?",
     re.IGNORECASE | re.DOTALL,

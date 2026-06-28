@@ -81,7 +81,7 @@ Grant only what you use. Each scope and why:
 |---|---|---|
 | `checks: write` | publish the `CodeGuardian Risk` check run | never — this is the core surface |
 | `pull-requests: write` | post/update the one sticky comment | you only want the check, no comment |
-| `issues: write` | comment + `@codeguardian` reply API (issue comments) | you disable the conversation loop |
+| `issues: write` | comment + `/codeguardian` reply API (issue comments) | you disable the conversation loop |
 | `actions: read` | read prior run artifacts for cross-PR memory | `memory.enabled: false` |
 | `contents: write` | push the `codeguardian-memory` branch only | `memory.enabled: false` → set back to `read` |
 
@@ -137,11 +137,11 @@ analysis (guarded/strict) prevents merge.
 ## Talk to it in the PR
 
 ```
-@codeguardian help
-@codeguardian explain            @codeguardian explain database risk
-@codeguardian tests              @codeguardian why blocked
-@codeguardian compare            @codeguardian has this happened before?
-@codeguardian recheck            @codeguardian ignore CG-DB-002 reason: column unused
+/codeguardian help
+/codeguardian explain            /codeguardian explain database risk
+/codeguardian tests              /codeguardian why blocked
+/codeguardian compare            /codeguardian has this happened before?
+/codeguardian recheck            /codeguardian ignore CG-DB-002 reason: column unused
 ```
 
 `recheck` and suppressing a blocking finding require a maintainer.

@@ -11,7 +11,7 @@ Quick reference for where the build is. Update this when a phase ships.
 
 ## MVP (Phases 0–6) — ✅ DELIVERED
 
-PR checker + LangGraph agents + `@codeguardian` loop + deep analyzers +
+PR checker + LangGraph agents + `/codeguardian` loop + deep analyzers +
 GitHub-native memory + packaging. Code under `src/codeguardian/`; 55 tests green;
 runs zero-key deterministic. Detail: [archive/](doc/build/archive/).
 

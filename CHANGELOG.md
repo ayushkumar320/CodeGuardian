@@ -6,6 +6,18 @@ All notable changes to CodeGuardian AI. Format based on
 
 ## [Unreleased]
 
+### Changed
+- **Command trigger is now `/codeguardian`** (was `@codeguardian`). The `@` form
+  is auto-linked by the GitHub UI to whatever account owns that username,
+  notifying an unrelated person on every command. The slash form has no such
+  collision. `@codeguardian` is still accepted for back-compat. Found during
+  Phase 7 live sandbox validation.
+
+### Fixed
+- **Action no longer fails on non-Python consumer repos**: removed the
+  `setup-python` pip cache, which keyed off a `requirements.txt`/`pyproject.toml`
+  in the consumer repo and aborted the run when absent. Found during Phase 7.
+
 ## [0.1.0] - 2026-06-27
 
 First MVP — a GitHub-native, deterministic-first pre-merge risk checker

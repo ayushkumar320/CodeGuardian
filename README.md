@@ -102,7 +102,7 @@ The merge decision should be understandable without leaving GitHub:
 - `CodeGuardian Risk` tells the developer whether the PR looks safe to merge.
 - The sticky comment answers why, with concise findings and next actions.
 - The artifact contains the full evidence when someone needs depth.
-- Optional `@codeguardian` commands keep follow-up inside the PR thread.
+- Optional `/codeguardian` commands keep follow-up inside the PR thread.
 
 ## How It Works
 
@@ -137,7 +137,7 @@ In scope:
 - GitHub Action workflow install
 - `CodeGuardian Risk` check
 - one sticky PR summary comment
-- `@codeguardian` PR commands
+- `/codeguardian` PR commands
 - deterministic-first analysis with optional model summarization
 - GitHub-native memory via artifacts and branch-backed storage
 
@@ -166,7 +166,7 @@ Out of scope:
 Working toward a trusted **v1.0** GitHub Action focused on the PR merge page.
 
 - **MVP (phases 0–6): delivered** — deterministic PR analysis, LangGraph agents,
-  `@codeguardian` loop, GitHub-native memory.
+  `/codeguardian` loop, GitHub-native memory.
 - **Robustness & observability (phase 8): done** — never-crash boundary, retries
   with timeouts, secret-safe logging, job summary, `--selfcheck`.
 - **Security & supply-chain (phase 9): done** — egress secret-scan, prompt-injection

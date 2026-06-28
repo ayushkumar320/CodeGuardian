@@ -87,7 +87,7 @@ Pick the topic, open only the listed target.
 | Risk report / finding schema | P1 "Finding Schema" ; P4 "Finding schema" |
 | LangGraph node list / state contract | P1 "LangGraph MVP Nodes" ; P2 "LangGraph State Contract" |
 | Agent graph + per-agent rules | P2 "Agent Graph" ; BP §4 |
-| Supported `@codeguardian` commands | P3 "Supported Commands" |
+| Supported `/codeguardian` commands | P3 "Supported Commands" |
 | Conversation event handling / idempotency | P3 "Senior Developer Prompt" |
 | Prisma / SQL migration / API / arch analyzers | P4 "Deliverables" |
 | `.codeguardian/policy.yml` policy file shape | P4 "Policy File Concept" |
@@ -116,7 +116,7 @@ Python package at `src/codeguardian/`. Stack: Python + LangGraph + Pydantic.
 | Similarity retrieval (path/category Jaccard) | `src/codeguardian/memory/retrieve.py` |
 | Historical-knowledge graph node | `src/codeguardian/graph/agents.py` (`historical_knowledge_agent`) |
 | Memory policy (enable/branch/thresholds) | `src/codeguardian/policy.py` (`Memory`) |
-| `@codeguardian` command parser / permissions / reply handlers / plan logic | `src/codeguardian/commands/parser.py`, `commands/permissions.py`, `commands/handlers.py`, `commands/loop.py` |
+| `/codeguardian` command parser / permissions / reply handlers / plan logic | `src/codeguardian/commands/parser.py`, `commands/permissions.py`, `commands/handlers.py`, `commands/loop.py` |
 | Comment-event parsing / artifact retrieval / reply idempotency / get_pull | `src/codeguardian/github/events.py` (`parse_comment_event`), `github/client.py` (`latest_reports`, `already_replied`, `get_pull`) |
 | Shared-type breakage analyzer | `src/codeguardian/analyzers/types.py` |
 | Deep DB (Prisma field/model removal, destructive SQL) / API spec drift / layers+cycles | `analyzers/database.py`, `analyzers/api.py`, `analyzers/architecture.py` |

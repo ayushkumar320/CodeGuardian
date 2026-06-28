@@ -89,7 +89,7 @@ pytest -q                 # builds real throwaway git repos as fixtures
 ## Option B — Real GitHub Action on a sandbox repo
 
 This proves the **GitHub surfaces** (check run, sticky comment, artifacts,
-`@codeguardian` commands) that a local run cannot. This is the Phase 7 validation
+`/codeguardian` commands) that a local run cannot. This is the Phase 7 validation
 path.
 
 1. **Create a sandbox repo** (a throwaway public repo is easiest).
@@ -126,8 +126,8 @@ path.
    - one sticky comment (skipped for docs-only / low-risk changes — this is
      intended, not a bug),
    - `codeguardian-report.json` + `.md` under the run's **Artifacts**.
-4. **Exercise the conversation loop:** comment `@codeguardian explain`,
-   `@codeguardian tests`, `@codeguardian recheck`.
+4. **Exercise the conversation loop:** comment `/codeguardian explain`,
+   `/codeguardian tests`, `/codeguardian recheck`.
 5. **(Optional) add a model provider** for nicer prose: set `GROQ_API_KEY` or
    `HF_TOKEN` as repo secrets and pass them to the Action. The score and findings
    never change — models only rephrase the summary.
@@ -147,7 +147,7 @@ exist, and commands reply once.
 export GITHUB_TOKEN=<a token with repo scope on the sandbox>
 python e2e/validate_sandbox.py verify-pr --repo owner/sandbox --pr 1 --expect-sticky
 python e2e/validate_sandbox.py send-command --repo owner/sandbox --pr 1 \
-    --body "@codeguardian tests"
+    --body "/codeguardian tests"
 ```
 
 There is also a `Phase 7 Sandbox Validate` workflow

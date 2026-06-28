@@ -71,7 +71,7 @@ def check_summary(report: Report, policy: Policy) -> str:
 
     lines += [
         "",
-        "**Ask in this PR:** `@codeguardian why blocked` · `@codeguardian tests` · `@codeguardian explain`",
+        "**Ask in this PR:** `/codeguardian why blocked` · `/codeguardian tests` · `/codeguardian explain`",
         "",
         f"_{report.mode.value} mode · {report.provider.value}_",
     ]
@@ -145,7 +145,7 @@ def sticky_comment(report: Report, policy: Policy, narrative: str) -> str:
     lines += [
         "",
         "---",
-        "Ask in this PR: `@codeguardian why blocked` · `tests` · `explain`",
+        "Ask in this PR: `/codeguardian why blocked` · `tests` · `explain`",
         f"_{report.mode.value} mode · {report.provider.value} · full report attached as a run artifact._",
     ]
     return "\n".join(lines)

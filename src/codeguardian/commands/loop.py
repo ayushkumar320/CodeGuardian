@@ -36,7 +36,7 @@ def plan(command: Command, reports: list[Report], author_association: str | None
 
     if name == CommandName.recheck:
         if not permissions.can_recheck(author_association):
-            return Outcome(reply="Only maintainers can run `@codeguardian recheck`.")
+            return Outcome(reply="Only maintainers can run `/codeguardian recheck`.")
         return Outcome(reply="Re-running CodeGuardian analysis on the latest commit…", do_recheck=True)
 
     if name == CommandName.ignore:
@@ -64,7 +64,7 @@ def plan(command: Command, reports: list[Report], author_association: str | None
 
 def _plan_ignore(command: Command, latest: Optional[Report], assoc: str | None) -> Outcome:
     if not command.finding_id:
-        return Outcome(reply="Usage: `@codeguardian ignore <finding-id> reason: <why>`")
+        return Outcome(reply="Usage: `/codeguardian ignore <finding-id> reason: <why>`")
     if not command.reason:
         return Outcome(reply="Suppression requires a reason. Add `reason: <why>`.")
     if latest is None:
