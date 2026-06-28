@@ -33,8 +33,30 @@ surfaces that local unit tests cannot prove:
 - command replies are posted once per triggering comment
 - fork PRs complete without crashing and without attempting comment/check writes
 
+## Scripted Validation
+
+The first harness script is:
+
+```bash
+GITHUB_TOKEN=... python e2e/validate_sandbox.py verify-pr \
+  --repo owner/name --pr 12 --expect-sticky
+```
+
+It verifies:
+
+- check run exists for the PR head SHA
+- sticky summary comment exists and is not duplicated
+- report artifacts are present
+
+You can also test command replies:
+
+```bash
+GITHUB_TOKEN=... python e2e/validate_sandbox.py send-command \
+  --repo owner/name --pr 12 --body "@codeguardian tests"
+```
+
 ## Next Step
 
-Add a scripted runner here once the sandbox repositories and auth method are
-chosen. The active Phase 7 deliverable is the harness plus regression fixes for
-every live-API gap it exposes.
+Use this script against the sandbox repositories, record the failures that only
+show up on the real API, and turn those into Phase 7 fixes plus regression
+tests.
