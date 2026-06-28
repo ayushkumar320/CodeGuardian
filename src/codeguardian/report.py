@@ -20,6 +20,8 @@ _LEVEL_LABEL = {
 
 
 def merge_status(report: Report) -> str:
+    if report.degraded and not report.risk.blocking:
+        return "Allowed with degraded analysis"
     if report.risk.blocking:
         return f"Blocked by policy ({report.mode.value})"
     if report.risk.level == RiskLevel.medium:
@@ -56,6 +58,8 @@ def check_summary(report: Report, policy: Policy) -> str:
     ]
     if report.affected_areas:
         lines += ["", "**Affected areas:** " + ", ".join(report.affected_areas)]
+    if report.degraded:
+        lines += ["", "**Run health:** degraded — one or more analyzers or integrations failed."]
 
     top = active[: policy.noise.max_findings_check]
     if top:
@@ -73,6 +77,10 @@ def check_summary(report: Report, policy: Policy) -> str:
     ]
     if report.deterministic_notice:
         lines += ["", f"> {report.deterministic_notice}"]
+    if report.errors:
+        lines += ["", "<details><summary>Errors</summary>", ""]
+        lines += [f"- {e}" for e in report.errors[:10]]
+        lines += ["", "</details>"]
     return "\n".join(lines)
 
 
@@ -93,6 +101,8 @@ def sticky_comment(report: Report, policy: Policy, narrative: str) -> str:
         f"**Risk: {report.risk.score} / 10 · {_LEVEL_LABEL[report.risk.level]}**  ·  "
         f"**Merge: {merge_status(report)}**",
     ]
+    if report.degraded:
+        lines += ["", "> This run is degraded. Some analyzers or integrations failed, so the result may be incomplete."]
     if report.affected_areas:
         lines.append("Affected: " + " · ".join(report.affected_areas))
     if narrative:
@@ -126,6 +136,10 @@ def sticky_comment(report: Report, policy: Policy, narrative: str) -> str:
         lines += ["", "<details><summary>Suppressed findings</summary>", ""]
         for f in suppressed:
             lines.append(f"- `{f.id}` — {f.suppressed.reason} (by {f.suppressed.by})")
+        lines += ["", "</details>"]
+    if report.errors:
+        lines += ["", "<details><summary>Errors</summary>", ""]
+        lines += [f"- {e}" for e in report.errors[:10]]
         lines += ["", "</details>"]
 
     lines += [

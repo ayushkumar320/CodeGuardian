@@ -149,8 +149,10 @@ class Report(BaseModel):
     actions: list[str] = Field(default_factory=list)
     reviewers: list[str] = Field(default_factory=list)
     historical_context: list[str] = Field(default_factory=list)
+    errors: list[str] = Field(default_factory=list)
     dedupe_key: str = ""
     deterministic_notice: Optional[str] = None
+    degraded: bool = False
 
     def active_findings(self) -> list[Finding]:
         return [f for f in self.findings if f.suppressed is None]

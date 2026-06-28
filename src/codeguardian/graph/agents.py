@@ -129,6 +129,8 @@ def risk_scoring_agent(state: CodeGuardianState) -> dict:
         findings=findings,
         actions=actions,
         reviewers=reviewers,
+        errors=state.get("errors", []),
+        degraded=bool(state.get("errors", [])),
         dedupe_key=f"{pr.owner}/{pr.repo}#{pr.number}@{pr.head_sha}:{ANALYZER_VERSION}",
     )
     return {"report": report}
@@ -167,6 +169,8 @@ def historical_knowledge_agent(state: CodeGuardianState) -> dict:
         policy.memory.min_similarity,
     )
     report.historical_context = context_lines(matches)
+    report.errors = state.get("errors", [])
+    report.degraded = bool(report.errors)
     return {"report": report}
 
 
@@ -180,4 +184,6 @@ def recommendation_agent(state: CodeGuardianState) -> dict:
             "token was configured. Risk score and recommendations are based on "
             "static analysis only."
         )
+    report.errors = state.get("errors", [])
+    report.degraded = bool(report.errors)
     return {"report": report, "narrative": result.text, "provider_usage": [f"summary:{result.provider.value}"]}

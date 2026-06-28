@@ -27,7 +27,7 @@ from .github.events import (
 from .graph.build import run_analysis
 from .memory.record import MemoryRecord
 from .memory.store import GitBranchMemoryStore
-from .models import PrContext, Report, RiskLevel, Suppression
+from .models import PrContext, Provider, Report, RiskLevel, Suppression
 from .policy import Policy
 from .providers import deterministic_summary
 from .report import (
@@ -69,6 +69,41 @@ def _write_artifacts(report: Report, policy: Policy, narrative: str) -> str:
     return json_path
 
 
+def _write_job_summary(report: Report) -> None:
+    path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if not path:
+        return
+    lines = [
+        "# CodeGuardian",
+        "",
+        f"- Risk: **{report.risk.score} / 10 {report.risk.level.value}**",
+        f"- Merge: **{check_conclusion(report)}**",
+        f"- Provider: **{report.provider.value}**",
+    ]
+    if report.degraded:
+        lines.append("- Run health: **degraded**")
+    if report.actions:
+        lines += ["", "## Top actions"]
+        lines += [f"{i}. {a}" for i, a in enumerate(report.actions[:3], 1)]
+    if report.errors:
+        lines += ["", "## Errors"]
+        lines += [f"- {e}" for e in report.errors[:10]]
+    with open(path, "a", encoding="utf-8") as fh:
+        fh.write("\n".join(lines) + "\n")
+
+
+def _internal_error_report(pr: PrContext, policy: Policy, message: str) -> Report:
+    return Report(
+        pr=pr,
+        mode=policy.mode,
+        provider=Provider.deterministic,
+        risk=score([], policy),
+        errors=[message],
+        degraded=True,
+        deterministic_notice="CodeGuardian hit an internal error and returned a degraded result.",
+    )
+
+
 def _memory_store(repo_root: str, policy: Policy):
     if not policy.memory.enabled:
         return None
@@ -98,6 +133,7 @@ def _analyze_and_publish(repo_root: str, pr: PrContext, policy: Policy) -> Repor
     title = f"{report.risk.score}/10 {report.risk.level.value} — {'blocked' if report.risk.blocking else 'allowed'}"
     if not _can_publish(pr):
         print("CodeGuardian: fork PR detected; skipping check/comment/memory writes.")
+        _write_job_summary(report)
         print(f"CodeGuardian: {title} (provider={report.provider.value})  report: {json_path}")
         return report
     try:
@@ -112,6 +148,7 @@ def _analyze_and_publish(repo_root: str, pr: PrContext, policy: Policy) -> Repor
     except Exception as exc:  # noqa: BLE001 - never crash on GitHub I/O
         print(f"CodeGuardian: GitHub publish failed: {exc}", file=sys.stderr)
 
+    _write_job_summary(report)
     print(f"CodeGuardian: {title} (provider={report.provider.value})  report: {json_path}")
     return report
 
@@ -241,9 +278,39 @@ def run() -> int:
     repo_root = _workspace()
     event = load_event()
     name = event_name()
-    if name in COMMENT_EVENTS:
-        return _run_comment(event, repo_root)
-    return _run_pull_request(event, repo_root)
+    try:
+        if name in COMMENT_EVENTS:
+            return _run_comment(event, repo_root)
+        return _run_pull_request(event, repo_root)
+    except Exception as exc:  # noqa: BLE001
+        pr = parse_pr_context(event)
+        if pr is None:
+            print(f"CodeGuardian: internal error before PR context was available: {exc}", file=sys.stderr)
+            return 0
+        policy = Policy.load(repo_root)
+        report = _internal_error_report(pr, policy, f"internal: {exc}")
+        narrative = "CodeGuardian hit an internal error before analysis completed."
+        _write_artifacts(report, policy, narrative)
+        _write_job_summary(report)
+        client = GitHubClient()
+        if _can_publish(pr):
+            try:
+                client.publish_check(
+                    pr.owner,
+                    pr.repo,
+                    pr.head_sha,
+                    "neutral",
+                    "internal error — degraded",
+                    check_summary(report, policy),
+                )
+                if _should_comment(report, policy):
+                    client.upsert_sticky_comment(
+                        pr.owner, pr.repo, pr.number, sticky_comment(report, policy, narrative)
+                    )
+            except Exception as publish_exc:  # noqa: BLE001
+                print(f"CodeGuardian: failed to publish internal-error result: {publish_exc}", file=sys.stderr)
+        print(f"CodeGuardian: internal error handled gracefully: {exc}", file=sys.stderr)
+        return 0
 
 
 def main() -> None:
