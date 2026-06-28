@@ -68,10 +68,12 @@ Pick the topic, open only the listed target.
 | Debug logging (`CODEGUARDIAN_DEBUG`, secret-safe) | P8 "Scope" ; `src/codeguardian/log.py` (`get_logger`, `debug_enabled`) |
 | Job summary writer (`$GITHUB_STEP_SUMMARY`) | P8 "Deliverables" ; `src/codeguardian/__main__.py` (`_write_job_summary`) |
 | `--selfcheck` (env, token reachability, provider) | P8 "Deliverables" ; `src/codeguardian/selfcheck.py` (`run_selfcheck`) |
-| Fork PR safety / `pull_request` vs `pull_request_target` guidance | P9 "Scope", "Deliverables", "Acceptance Criteria" |
-| Prompt-injection validation corpus and evidence-only model rule | P9 "Scope", "Acceptance Criteria" ; WFI §19 |
-| Output secret scanning before posting | P9 "Scope", "Deliverables" |
-| Supply-chain hardening (pinned actions, Dependabot, CodeQL, SBOM, signed releases) | P9 "Scope", "Deliverables" |
+| Fork PR safety / `pull_request` vs `pull_request_target` guidance | P9 ; `INSTALL.md` "Permissions explained" ; `THREAT-MODEL.md` (T4) ; `__main__._can_publish` |
+| Prompt-injection validation corpus and evidence-only model rule | P9 ; WFI §19 ; `tests/injection_corpus.py` ; `tests/test_phase9_security.py` ; `models.Finding` (evidence required) |
+| Output secret scanning before posting (egress) | P9 ; `src/codeguardian/security.py` (`safe_output`, `find_secrets`) ; `github/client.py` (`_scrub`) |
+| Secret reporting / vulnerability disclosure / security posture | `SECURITY.md` ; `THREAT-MODEL.md` |
+| Supply-chain hardening (SHA-pinned actions, Dependabot, CodeQL) | P9 ; `.github/workflows/*.yml` (SHA pins) ; `.github/dependabot.yml` ; `.github/workflows/codeql.yml` |
+| SBOM / signed releases (release-time supply chain) | P9 "Deliverables" ; deferred to P11 release workflow ; [RELEASING.md](RELEASING.md) |
 | Performance bottlenecks to measure first | P10 "Current cost centers (to measure first)" |
 | Shared import graph / bounded repo walk / batched diff parsing | P10 "Scope", "Deliverables" |
 | Large-diff caps / soft timeout / partial-result publishing | P10 "Scope", "Deliverables" |
@@ -128,7 +130,11 @@ Python package at `src/codeguardian/`. Stack: Python + LangGraph + Pydantic.
 | Deterministic analyzers (API contract, DB/migration, architecture) | `src/codeguardian/analyzers/api.py`, `analyzers/database.py`, `analyzers/architecture.py` |
 | Risk scoring (confidence-weighted aggregate) | `src/codeguardian/scoring.py` |
 | Provider router Groq→HF→deterministic + output schema validation | `src/codeguardian/providers.py` (`validate_summary`) |
-| Secret redaction / untrusted-text fencing | `src/codeguardian/security.py` |
+| Secret redaction (ingress) / untrusted-text fencing / egress secret-scan | `src/codeguardian/security.py` (`redact`, `wrap_untrusted`, `find_secrets`, `safe_output`) |
+| Egress secret-scan chokepoint before posting | `src/codeguardian/github/client.py` (`_scrub`) |
+| Prompt-injection corpus + security tests | `tests/injection_corpus.py`, `tests/test_phase9_security.py` |
+| Supply-chain config (SHA-pinned actions, Dependabot, CodeQL) | `.github/workflows/*.yml`, `.github/dependabot.yml`, `.github/workflows/codeql.yml` |
+| Security policy / threat model | `SECURITY.md`, `THREAT-MODEL.md` |
 | LangGraph state (reducers) / entry+context nodes / domain+synthesis agents / builder | `src/codeguardian/graph/state.py`, `graph/nodes.py`, `graph/agents.py`, `graph/build.py` |
 | Check summary / sticky comment / artifacts | `src/codeguardian/report.py` |
 | GitHub event parsing + REST client | `src/codeguardian/github/events.py`, `github/client.py` |

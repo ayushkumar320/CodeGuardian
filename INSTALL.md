@@ -65,6 +65,30 @@ and no repository secrets. CodeGuardian therefore degrades safely:
 
 This is the intended safe behavior for untrusted fork-originated code.
 
+> **`pull_request` vs `pull_request_target`:** always trigger CodeGuardian on
+> `pull_request`. That event runs with a read-only token and **no secrets** for
+> fork PRs, which is exactly what we want. Do **not** switch to
+> `pull_request_target` — it runs with write permissions and repository secrets
+> in the context of untrusted PR code, which is a well-known privilege-escalation
+> footgun. CodeGuardian never checks out and executes PR code; it only reads the
+> diff and runs static analyzers.
+
+### Permissions explained (least privilege)
+
+Grant only what you use. Each scope and why:
+
+| Permission | Why | Drop it if… |
+|---|---|---|
+| `checks: write` | publish the `CodeGuardian Risk` check run | never — this is the core surface |
+| `pull-requests: write` | post/update the one sticky comment | you only want the check, no comment |
+| `issues: write` | comment + `@codeguardian` reply API (issue comments) | you disable the conversation loop |
+| `actions: read` | read prior run artifacts for cross-PR memory | `memory.enabled: false` |
+| `contents: write` | push the `codeguardian-memory` branch only | `memory.enabled: false` → set back to `read` |
+
+The minimal read-only footprint (no comment, no memory) is `checks: write` +
+`contents: read`. See [SECURITY.md](SECURITY.md) and
+[THREAT-MODEL.md](THREAT-MODEL.md) for the full security posture.
+
 ## 3. (Optional) Add a model provider
 
 CodeGuardian routes **Groq → Hugging Face → deterministic**. Models only rephrase

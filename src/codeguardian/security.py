@@ -28,6 +28,23 @@ def redact(text: str) -> str:
     return out
 
 
+def find_secrets(text: str) -> list[str]:
+    """Return the secret-shaped substrings present in ``text`` (for egress
+    scanning / logging which pattern fired). Empty when the text is clean."""
+    hits: list[str] = []
+    for pat in _SECRET_PATTERNS:
+        hits.extend(m.group(0) for m in pat.finditer(text))
+    return hits
+
+
+def safe_output(text: str) -> str:
+    """Defense-in-depth egress filter: redact any secret-shaped content from
+    text we are about to post to GitHub (check, comment, reply). Input is
+    already redacted before model calls; this guards the *output* path too
+    (Phase 9). Returns the redacted, safe-to-post string."""
+    return redact(text)
+
+
 def wrap_untrusted(text: str) -> str:
     """Fence repo text so a model treats it as data, not instructions."""
     safe = redact(text)

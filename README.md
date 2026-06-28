@@ -143,6 +143,8 @@ Out of scope:
 ## Docs
 
 - [INSTALL.md](INSTALL.md) — install and configure the Action
+- [SECURITY.md](SECURITY.md) — security policy, vulnerability reporting, hardening
+- [THREAT-MODEL.md](THREAT-MODEL.md) — threats, mitigations, and residual risks
 - [TROUBLESHOOTING.md](TROUBLESHOOTING.md) — common setup and runtime issues
 - [doc/GitHub-PR-User-Flowmap.md](doc/GitHub-PR-User-Flowmap.md) — merge-page product behavior
 - [doc/build/README.md](doc/build/README.md) — active production roadmap to v1.0

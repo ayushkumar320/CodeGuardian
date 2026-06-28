@@ -18,6 +18,18 @@ from typing import Optional
 import requests
 
 from ..http import request as http_request
+from ..log import get_logger
+from ..security import find_secrets, safe_output
+
+_log = get_logger()
+
+
+def _scrub(text: str) -> str:
+    """Egress secret-scan: redact any secret-shaped content before posting and
+    log (redacted) if something fired, as a defense-in-depth signal (Phase 9)."""
+    if find_secrets(text):
+        _log.warning("egress secret-scan redacted secret-shaped content before posting")
+    return safe_output(text)
 
 from .. import CHECK_NAME, SUMMARY_ANCHOR
 
@@ -60,7 +72,7 @@ class GitHubClient:
             "head_sha": head_sha,
             "status": "completed",
             "conclusion": conclusion,
-            "output": {"title": title, "summary": summary[:65000]},
+            "output": {"title": _scrub(title), "summary": _scrub(summary)[:65000]},
         }
         existing = self._find_check_run(owner, repo, head_sha)
         if existing is not None:
@@ -93,6 +105,7 @@ class GitHubClient:
     ) -> Optional[int]:
         if not self.enabled:
             return None
+        body = _scrub(body)
         existing = self._find_sticky(owner, repo, number)
         if existing:
             url = f"{self.api_url}/repos/{owner}/{repo}/issues/comments/{existing}"
@@ -128,7 +141,7 @@ class GitHubClient:
         if not self.enabled:
             return None
         url = f"{self.api_url}/repos/{owner}/{repo}/issues/{number}/comments"
-        resp = http_request("POST", url, headers=self._headers(), json={"body": body}, timeout=_TIMEOUT)
+        resp = http_request("POST", url, headers=self._headers(), json={"body": _scrub(body)}, timeout=_TIMEOUT)
         resp.raise_for_status()
         return resp.json().get("id")
 
