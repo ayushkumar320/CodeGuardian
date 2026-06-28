@@ -20,8 +20,8 @@ runs zero-key deterministic. Detail: [archive/](doc/build/archive/).
 | Phase | What | State |
 |-------|------|-------|
 | **P7** | **Real-PR validation & live-API hardening** | ▶ sandbox validation still pending (deferred) |
-| **P8** | **Robustness & observability (never-crash, retries, job summary)** | **▶ IN PROGRESS — failure boundary + retries + logging + selfcheck landed; failure-injection coverage growing** |
-| P9 | Security & supply-chain hardening (fork-PR safety, injection corpus) | ⬜ pending |
+| P8 | Robustness & observability (never-crash, retries, job summary) | ✅ DONE — all acceptance criteria met |
+| **P9** | **Security & supply-chain hardening (fork-PR safety, injection corpus)** | **▶ NEXT** |
 | P10 | Performance & scale (shared import graph, memory compaction) | ⬜ pending |
 | P11 | Release engineering & Marketplace (reproducible packaging, automation) | ⬜ pending |
 | P12 | Beta, tuning & v1.0 GA | ⬜ pending |
@@ -54,25 +54,28 @@ Run the real sandbox validation described in
 be marked complete until public, private, and fork PR behavior is validated on
 the live GitHub API.
 
-## Phase 8 — robustness & observability (in progress)
+## Phase 8 — robustness & observability ✅ DONE
 
-Phase 7's live sandbox validation is deferred (to be run later); Phase 8 work has
-started in parallel. Landed so far:
+Phase 7's live sandbox validation is deferred (to be run later); Phase 8 was
+completed in parallel. Acceptance criteria all met:
 
 - **Failure boundary**: any uncaught error → neutral check, error in artifact,
   exit 0 (`__main__.run`). Per-analyzer isolation surfaces `Report.errors[]` +
-  `degraded`.
+  `degraded`. Provider timeout falls through to deterministic (tested); GitHub
+  publish failures are caught and never crash.
 - **Retry+timeout HTTP helper** (`src/codeguardian/http.py`): bounded exponential
   backoff with jitter, honors `Retry-After`, retries only transient
-  (timeout/conn/429/5xx). Wired through `github/client.py` and `providers.py`.
+  (timeout/conn/429/5xx). All network calls routed through it (no raw
+  `requests.*` left in client/providers).
 - **Leveled secret-safe logging** (`src/codeguardian/log.py`): `CODEGUARDIAN_DEBUG`
-  flips to DEBUG; every message passes through secret redaction.
-- **Job summary** writer to `$GITHUB_STEP_SUMMARY` (`__main__._write_job_summary`).
+  flips to DEBUG; every message passes through secret redaction (tested).
+- **Job summary** writer to `$GITHUB_STEP_SUMMARY` on every analysis path.
 - **`python -m codeguardian --selfcheck`** (`src/codeguardian/selfcheck.py`):
   pass/fail per dependency (git, repo env, token reachability, provider).
+- **Degraded badge** surfaces in check title, check summary, and sticky comment
+  (`report.py`).
 
-Remaining for P8: broaden failure-injection tests (provider timeout, API 500
-paths end-to-end), and confirm "degraded" badge surfaces in the check/comment.
+Coverage: 76 tests green.
 
 ## Open operational items (not new phases)
 

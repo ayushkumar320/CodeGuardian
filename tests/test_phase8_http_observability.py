@@ -99,3 +99,27 @@ def test_selfcheck_passes_with_reachable_token(monkeypatch):
     monkeypatch.setattr(http.requests, "request", fake_request)
     rc = run_selfcheck({"GITHUB_TOKEN": "t", "GITHUB_REPOSITORY": "o/r"})
     assert rc == 0
+
+
+def test_provider_timeout_falls_through_to_deterministic(monkeypatch):
+    """Acceptance: a provider timeout degrades to the deterministic summary,
+    never crashes the run."""
+    from codeguardian.models import PrContext, Provider, Report
+    from codeguardian.policy import Policy
+    from codeguardian.providers import summarize
+    from codeguardian.scoring import score
+
+    def boom(method, url, timeout=None, **kwargs):
+        raise requests.Timeout("model slow")
+
+    monkeypatch.setattr(http.requests, "request", boom)
+    policy = Policy()
+    report = Report(
+        pr=PrContext(owner="o", repo="r", number=1, base_sha="a", head_sha="b"),
+        mode=policy.mode,
+        provider=Provider.deterministic,
+        risk=score([], policy),
+    )
+    result = summarize(report, env={"GROQ_API_KEY": "k", "HF_TOKEN": "h"})
+    assert result.provider == Provider.deterministic
+    assert isinstance(result.text, str) and result.text
