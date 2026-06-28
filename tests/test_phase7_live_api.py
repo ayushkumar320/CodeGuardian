@@ -58,6 +58,8 @@ def test_publish_check_updates_existing(monkeypatch):
     class Resp:
         def __init__(self, payload):
             self._payload = payload
+            self.status_code = 200
+            self.headers = {}
 
         def raise_for_status(self):
             return None
@@ -65,16 +67,14 @@ def test_publish_check_updates_existing(monkeypatch):
         def json(self):
             return self._payload
 
-    def fake_get(url, headers=None, params=None, timeout=None):
-        calls.append(("get", url))
-        return Resp({"check_runs": [{"id": 42, "name": "CodeGuardian Risk"}]})
-
-    def fake_patch(url, headers=None, json=None, timeout=None):
+    def fake_request(method, url, headers=None, params=None, json=None, timeout=None):
+        if method == "GET":
+            calls.append(("get", url))
+            return Resp({"check_runs": [{"id": 42, "name": "CodeGuardian Risk"}]})
         calls.append(("patch", url))
         return Resp({"id": 42})
 
-    monkeypatch.setattr("codeguardian.github.client.requests.get", fake_get)
-    monkeypatch.setattr("codeguardian.github.client.requests.patch", fake_patch)
+    monkeypatch.setattr("codeguardian.http.requests.request", fake_request)
 
     client = GitHubClient(token="t")
     out = client.publish_check("o", "r", "sha", "failure", "title", "summary")

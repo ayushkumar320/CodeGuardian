@@ -37,7 +37,10 @@ from .report import (
     markdown_artifact,
     sticky_comment,
 )
+from .log import get_logger
 from .scoring import score
+
+_log = get_logger()
 
 
 def _workspace() -> str:
@@ -127,7 +130,7 @@ def _analyze_and_publish(repo_root: str, pr: PrContext, policy: Policy) -> Repor
         try:
             store.append(MemoryRecord.from_report(report))
         except Exception as exc:  # noqa: BLE001
-            print(f"CodeGuardian: memory write skipped: {exc}", file=sys.stderr)
+            _log.warning("memory write skipped: %s", exc)
 
     client = GitHubClient()
     title = f"{report.risk.score}/10 {report.risk.level.value} — {'blocked' if report.risk.blocking else 'allowed'}"
@@ -146,7 +149,7 @@ def _analyze_and_publish(repo_root: str, pr: PrContext, policy: Policy) -> Repor
                 pr.owner, pr.repo, pr.number, sticky_comment(report, policy, narrative)
             )
     except Exception as exc:  # noqa: BLE001 - never crash on GitHub I/O
-        print(f"CodeGuardian: GitHub publish failed: {exc}", file=sys.stderr)
+        _log.warning("GitHub publish failed: %s", exc)
 
     _write_job_summary(report)
     print(f"CodeGuardian: {title} (provider={report.provider.value})  report: {json_path}")
@@ -210,7 +213,7 @@ def _post_reply(client: GitHubClient, owner: str, repo: str, number: int,
     try:
         client.reply(owner, repo, number, f"{marker}\n{body}")
     except Exception as exc:  # noqa: BLE001
-        print(f"CodeGuardian: reply failed: {exc}", file=sys.stderr)
+        _log.warning("reply failed: %s", exc)
 
 
 def _recheck(client: GitHubClient, owner: str, repo: str, number: int,
@@ -271,7 +274,7 @@ def _apply_suppression(client: GitHubClient, owner: str, repo: str, ce,
             owner, repo, ce.pr_number, sticky_comment(report, policy, narrative)
         )
     except Exception as exc:  # noqa: BLE001
-        print(f"CodeGuardian: sticky update failed: {exc}", file=sys.stderr)
+        _log.warning("sticky update failed: %s", exc)
 
 
 def run() -> int:
@@ -285,7 +288,7 @@ def run() -> int:
     except Exception as exc:  # noqa: BLE001
         pr = parse_pr_context(event)
         if pr is None:
-            print(f"CodeGuardian: internal error before PR context was available: {exc}", file=sys.stderr)
+            _log.error("internal error before PR context was available: %s", exc)
             return 0
         policy = Policy.load(repo_root)
         report = _internal_error_report(pr, policy, f"internal: {exc}")
@@ -308,12 +311,16 @@ def run() -> int:
                         pr.owner, pr.repo, pr.number, sticky_comment(report, policy, narrative)
                     )
             except Exception as publish_exc:  # noqa: BLE001
-                print(f"CodeGuardian: failed to publish internal-error result: {publish_exc}", file=sys.stderr)
-        print(f"CodeGuardian: internal error handled gracefully: {exc}", file=sys.stderr)
+                _log.error("failed to publish internal-error result: %s", publish_exc)
+        _log.error("internal error handled gracefully: %s", exc)
         return 0
 
 
 def main() -> None:
+    if "--selfcheck" in sys.argv[1:]:
+        from .selfcheck import run_selfcheck
+
+        sys.exit(run_selfcheck())
     sys.exit(run())
 
 

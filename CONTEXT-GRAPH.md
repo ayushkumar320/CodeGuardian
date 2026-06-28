@@ -63,9 +63,11 @@ Pick the topic, open only the listed target.
 | Real-PR validation scope / sandbox repo / public-private-fork coverage | P7 "Objective", "Scope", "Deliverables" |
 | Live API gaps to harden first (pagination, rate limits, large diffs, concurrent runs, missing permissions) | P7 "Scope" |
 | E2E harness expectations for real PRs | P7 "Deliverables", "Acceptance Criteria" |
-| Never-crash boundary / degraded-run behavior / exit-0 on internal errors | P8 "Scope", "Deliverables", "Acceptance Criteria" |
-| Retry/backoff/timeouts for GitHub, Groq, HF | P8 "Scope", "Deliverables" |
-| Debug logging / job summary / `--selfcheck` | P8 "Scope", "Deliverables" |
+| Never-crash boundary / degraded-run behavior / exit-0 on internal errors | P8 "Scope", "Deliverables", "Acceptance Criteria" ; `src/codeguardian/__main__.py` (`run`, `_internal_error_report`) ; `models.py` (`Report.errors`, `degraded`) |
+| Retry/backoff/timeouts for GitHub, Groq, HF | P8 "Scope", "Deliverables" ; `src/codeguardian/http.py` (`request`) |
+| Debug logging (`CODEGUARDIAN_DEBUG`, secret-safe) | P8 "Scope" ; `src/codeguardian/log.py` (`get_logger`, `debug_enabled`) |
+| Job summary writer (`$GITHUB_STEP_SUMMARY`) | P8 "Deliverables" ; `src/codeguardian/__main__.py` (`_write_job_summary`) |
+| `--selfcheck` (env, token reachability, provider) | P8 "Deliverables" ; `src/codeguardian/selfcheck.py` (`run_selfcheck`) |
 | Fork PR safety / `pull_request` vs `pull_request_target` guidance | P9 "Scope", "Deliverables", "Acceptance Criteria" |
 | Prompt-injection validation corpus and evidence-only model rule | P9 "Scope", "Acceptance Criteria" ; WFI §19 |
 | Output secret scanning before posting | P9 "Scope", "Deliverables" |
@@ -130,7 +132,10 @@ Python package at `src/codeguardian/`. Stack: Python + LangGraph + Pydantic.
 | LangGraph state (reducers) / entry+context nodes / domain+synthesis agents / builder | `src/codeguardian/graph/state.py`, `graph/nodes.py`, `graph/agents.py`, `graph/build.py` |
 | Check summary / sticky comment / artifacts | `src/codeguardian/report.py` |
 | GitHub event parsing + REST client | `src/codeguardian/github/events.py`, `github/client.py` |
-| Action entrypoint (publish + exit code) | `src/codeguardian/__main__.py` |
+| Retry+timeout HTTP helper (backoff+jitter; used by client + providers) | `src/codeguardian/http.py` (`request`) |
+| Leveled secret-safe logging (`CODEGUARDIAN_DEBUG`) | `src/codeguardian/log.py` |
+| `--selfcheck` diagnostics (env / token / provider) | `src/codeguardian/selfcheck.py` |
+| Action entrypoint (publish + exit code, failure boundary, job summary, `--selfcheck` dispatch) | `src/codeguardian/__main__.py` |
 | Action metadata (inputs) / example workflow / CI / policy | `action.yml`, `.github/workflows/codeguardian.yml`, `.github/workflows/ci.yml`, `.codeguardian/policy.yml` |
 | Install / troubleshooting / changelog / release docs | `INSTALL.md`, `TROUBLESHOOTING.md`, `CHANGELOG.md`, `RELEASING.md` |
 | Tests | `tests/` |

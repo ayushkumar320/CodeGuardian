@@ -14,6 +14,8 @@ from typing import Optional
 
 import requests
 
+from .http import request as http_request
+
 from .models import Provider, Report
 from .security import wrap_untrusted
 
@@ -118,7 +120,7 @@ def _build_prompt(report: Report) -> str:
 
 def _try_groq(prompt: str, env: dict) -> Optional[str]:
     try:
-        resp = requests.post(
+        resp = http_request("POST", 
             _GROQ_URL,
             headers={"Authorization": f"Bearer {env['GROQ_API_KEY']}"},
             json={
@@ -137,7 +139,7 @@ def _try_groq(prompt: str, env: dict) -> Optional[str]:
 
 def _try_hf(prompt: str, env: dict) -> Optional[str]:
     try:
-        resp = requests.post(
+        resp = http_request("POST", 
             _HF_URL.format(model=_HF_MODEL),
             headers={"Authorization": f"Bearer {env['HF_TOKEN']}"},
             json={"inputs": prompt, "parameters": {"max_new_tokens": 200, "temperature": 0.2}},

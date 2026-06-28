@@ -17,6 +17,8 @@ from typing import Optional
 
 import requests
 
+from ..http import request as http_request
+
 from .. import CHECK_NAME, SUMMARY_ANCHOR
 
 _API = "https://api.github.com"
@@ -63,16 +65,16 @@ class GitHubClient:
         existing = self._find_check_run(owner, repo, head_sha)
         if existing is not None:
             url = f"{self.api_url}/repos/{owner}/{repo}/check-runs/{existing}"
-            resp = requests.patch(url, headers=self._headers(), json=body, timeout=_TIMEOUT)
+            resp = http_request("PATCH", url, headers=self._headers(), json=body, timeout=_TIMEOUT)
         else:
             url = f"{self.api_url}/repos/{owner}/{repo}/check-runs"
-            resp = requests.post(url, headers=self._headers(), json=body, timeout=_TIMEOUT)
+            resp = http_request("POST", url, headers=self._headers(), json=body, timeout=_TIMEOUT)
         resp.raise_for_status()
         return resp.json().get("id")
 
     def _find_check_run(self, owner: str, repo: str, head_sha: str) -> Optional[int]:
         url = f"{self.api_url}/repos/{owner}/{repo}/commits/{head_sha}/check-runs"
-        resp = requests.get(
+        resp = http_request("GET", 
             url,
             headers=self._headers(),
             params={"check_name": CHECK_NAME, "per_page": 100},
@@ -94,10 +96,10 @@ class GitHubClient:
         existing = self._find_sticky(owner, repo, number)
         if existing:
             url = f"{self.api_url}/repos/{owner}/{repo}/issues/comments/{existing}"
-            resp = requests.patch(url, headers=self._headers(), json={"body": body}, timeout=_TIMEOUT)
+            resp = http_request("PATCH", url, headers=self._headers(), json={"body": body}, timeout=_TIMEOUT)
         else:
             url = f"{self.api_url}/repos/{owner}/{repo}/issues/{number}/comments"
-            resp = requests.post(url, headers=self._headers(), json={"body": body}, timeout=_TIMEOUT)
+            resp = http_request("POST", url, headers=self._headers(), json={"body": body}, timeout=_TIMEOUT)
         resp.raise_for_status()
         return resp.json().get("id")
 
@@ -105,7 +107,7 @@ class GitHubClient:
         url = f"{self.api_url}/repos/{owner}/{repo}/issues/{number}/comments"
         page = 1
         while True:
-            resp = requests.get(
+            resp = http_request("GET", 
                 url,
                 headers=self._headers(),
                 params={"per_page": 100, "page": page},
@@ -126,7 +128,7 @@ class GitHubClient:
         if not self.enabled:
             return None
         url = f"{self.api_url}/repos/{owner}/{repo}/issues/{number}/comments"
-        resp = requests.post(url, headers=self._headers(), json={"body": body}, timeout=_TIMEOUT)
+        resp = http_request("POST", url, headers=self._headers(), json={"body": body}, timeout=_TIMEOUT)
         resp.raise_for_status()
         return resp.json().get("id")
 
@@ -137,7 +139,7 @@ class GitHubClient:
         url = f"{self.api_url}/repos/{owner}/{repo}/issues/{number}/comments"
         page = 1
         while True:
-            resp = requests.get(
+            resp = http_request("GET", 
                 url, headers=self._headers(),
                 params={"per_page": 100, "page": page}, timeout=_TIMEOUT,
             )
@@ -154,7 +156,7 @@ class GitHubClient:
         if not self.enabled:
             return None
         url = f"{self.api_url}/repos/{owner}/{repo}/pulls/{number}"
-        resp = requests.get(url, headers=self._headers(), timeout=_TIMEOUT)
+        resp = http_request("GET", url, headers=self._headers(), timeout=_TIMEOUT)
         resp.raise_for_status()
         return resp.json()
 
@@ -189,7 +191,7 @@ class GitHubClient:
         out: list[dict] = []
         try:
             for page in range(1, pages + 1):
-                resp = requests.get(
+                resp = http_request("GET", 
                     url,
                     headers=self._headers(),
                     params={"name": _REPORT_ARTIFACT, "per_page": per_page, "page": page},
@@ -213,7 +215,7 @@ class GitHubClient:
         owner, _, repo = full.partition("/")
         zip_url = f"{self.api_url}/repos/{owner}/{repo}/actions/artifacts/{artifact_id}/zip"
         try:
-            resp = requests.get(zip_url, headers=self._headers(), timeout=_TIMEOUT)
+            resp = http_request("GET", zip_url, headers=self._headers(), timeout=_TIMEOUT)
             resp.raise_for_status()
             with zipfile.ZipFile(io.BytesIO(resp.content)) as zf:
                 with zf.open(_REPORT_JSON) as fh:
