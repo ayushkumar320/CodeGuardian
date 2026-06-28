@@ -1,20 +1,30 @@
 version: 2
 updates:
   # Keep GitHub Actions SHA pins current (Dependabot updates the pinned SHA
-  # while preserving the human-readable version comment).
+  # while preserving the human-readable version comment). All action bumps are
+  # bundled into a SINGLE grouped PR so updates don't fragment into one PR per
+  # action.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 5
     commit-message:
       prefix: "ci"
     labels: ["dependencies", "security"]
+    groups:
+      github-actions:
+        patterns: ["*"]
 
-  # Python dependencies (pyproject).
+  # Python dependencies (pyproject), grouped into one PR per run.
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 5
     commit-message:
       prefix: "deps"
     labels: ["dependencies"]
+    groups:
+      python:
+        patterns: ["*"]
