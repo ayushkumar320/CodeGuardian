@@ -69,6 +69,7 @@ class Performance(BaseModel):
     # gitignore-aware and skips vendored/build/minified files regardless.
     max_files: int = 20000  # cap on files enumerated for the import graph / scan
     max_file_bytes: int = 1_000_000  # skip files larger than this when reading
+    max_diff_files: int = 300  # cap analyzed changed files; larger diffs are truncated
 
 
 class Model(BaseModel):

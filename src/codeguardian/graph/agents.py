@@ -138,6 +138,7 @@ def risk_scoring_agent(state: CodeGuardianState) -> dict:
         actions=actions,
         reviewers=reviewers,
         errors=state.get("errors", []),
+        notes=state.get("notes", []),
         degraded=bool(state.get("errors", [])),
         dedupe_key=f"{pr.owner}/{pr.repo}#{pr.number}@{pr.head_sha}:{ANALYZER_VERSION}",
     )

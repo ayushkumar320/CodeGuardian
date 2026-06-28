@@ -30,6 +30,18 @@ _CODE_EXT = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".py", ".css", ".scss
 def collect_pr_context(state: CodeGuardianState) -> dict:
     pr = state["pr"]
     files = compute_diff(state["repo_root"], pr.base_sha, pr.head_sha)
+
+    notes: list[str] = []
+    cap = state["policy"].performance.max_diff_files
+    if len(files) > cap:
+        total = len(files)
+        # Prioritize the largest changes so the cap keeps the most impactful files.
+        files = sorted(files, key=lambda f: f.additions + f.deletions, reverse=True)[:cap]
+        notes.append(
+            f"Diff too large: {total} files changed; analyzed the top {cap} by size. "
+            f"Findings may be incomplete."
+        )
+
     areas = sorted(
         {
             _AREA_BY_CATEGORY[f.category]
@@ -37,7 +49,7 @@ def collect_pr_context(state: CodeGuardianState) -> dict:
             if f.category in _AREA_BY_CATEGORY and f.category != FileCategory.docs
         }
     )
-    return {"diff": files, "affected_areas": areas}
+    return {"diff": files, "affected_areas": areas, "notes": notes}
 
 
 def repository_context(state: CodeGuardianState) -> dict:

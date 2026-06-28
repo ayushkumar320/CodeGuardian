@@ -25,6 +25,7 @@ class CodeGuardianState(TypedDict, total=False):
     evidence: Annotated[list[Finding], operator.add]
     provider_usage: Annotated[list[str], operator.add]
     errors: Annotated[list[str], operator.add]
+    notes: Annotated[list[str], operator.add]
     report: Report
     narrative: str
     memory_store: object  # optional MemoryStore for historical retrieval

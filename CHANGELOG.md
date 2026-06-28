@@ -20,6 +20,10 @@ All notable changes to CodeGuardian AI. Format based on
 - **Batched diff** (Phase 10): the PR diff now runs a single `git diff` and splits
   the unified output per file, instead of one `git diff -- <path>` per changed
   file (was O(files) git invocations).
+- **Large-diff cap** (Phase 10): PRs touching more than `policy.performance.
+  max_diff_files` (default 300) are analyzed top-N by change size, with a clear
+  "diff too large, analyzed top N" note surfaced on the check and sticky comment
+  (new `Report.notes`).
 
 ### Changed
 - **Command trigger is now `/codeguardian`** (was `@codeguardian`). The `@` form

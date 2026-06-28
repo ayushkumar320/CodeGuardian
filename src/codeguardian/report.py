@@ -60,6 +60,8 @@ def check_summary(report: Report, policy: Policy) -> str:
         lines += ["", "**Affected areas:** " + ", ".join(report.affected_areas)]
     if report.degraded:
         lines += ["", "**Run health:** degraded — one or more analyzers or integrations failed."]
+    for note in report.notes:
+        lines += ["", f"> {note}"]
 
     top = active[: policy.noise.max_findings_check]
     if top:
@@ -103,6 +105,8 @@ def sticky_comment(report: Report, policy: Policy, narrative: str) -> str:
     ]
     if report.degraded:
         lines += ["", "> This run is degraded. Some analyzers or integrations failed, so the result may be incomplete."]
+    for note in report.notes:
+        lines += ["", f"> {note}"]
     if report.affected_areas:
         lines.append("Affected: " + " · ".join(report.affected_areas))
     if narrative:

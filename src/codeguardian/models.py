@@ -150,6 +150,7 @@ class Report(BaseModel):
     reviewers: list[str] = Field(default_factory=list)
     historical_context: list[str] = Field(default_factory=list)
     errors: list[str] = Field(default_factory=list)
+    notes: list[str] = Field(default_factory=list)  # operational notes (e.g. diff truncated)
     dedupe_key: str = ""
     deterministic_notice: Optional[str] = None
     degraded: bool = False
