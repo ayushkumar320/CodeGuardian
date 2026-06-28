@@ -19,14 +19,29 @@ runs zero-key deterministic. Detail: [archive/](doc/build/archive/).
 
 | Phase | What | State |
 |-------|------|-------|
-| **P7** | **Real-PR validation & live-API hardening** | ▶ sandbox validation still pending (deferred) |
+| **P7** | **Real-PR validation & live-API hardening** | **⏸ DEFERRED — pick up later (next when resumed); only the live sandbox run remains** |
 | P8 | Robustness & observability (never-crash, retries, job summary) | ✅ DONE — all acceptance criteria met |
-| **P9** | **Security & supply-chain hardening (fork-PR safety, injection corpus)** | **▶ IN PROGRESS — code + CI + docs landed; SBOM/signed releases deferred to P11** |
+| P9 | Security & supply-chain hardening (fork-PR safety, injection corpus) | ✅ DONE — code + CI + docs landed; SBOM/signed releases deferred to P11 |
 | P10 | Performance & scale (shared import graph, memory compaction) | ⬜ pending |
 | P11 | Release engineering & Marketplace (reproducible packaging, automation) | ⬜ pending |
 | P12 | Beta, tuning & v1.0 GA | ⬜ pending |
 
-## Next up: Phase 7 — real-PR validation
+## ⏸ Deferred — pick up later: Phase 7 live sandbox validation
+
+> **Status (as of June 28, 2026):** intentionally deferred — I'll come back to
+> this. P8 and P9 were completed in parallel, so the **only** thing standing
+> between here and finishing P7 is running the real sandbox validation against
+> the live GitHub API. Everything code-side is ready.
+>
+> **When resuming, start here:**
+> - Quick local smoke (no token, no PR): `scripts/run-local.sh /path/to/repo` —
+>   see [TESTING.md](TESTING.md) Option A.
+> - Live validation: install the Action on a sandbox repo and follow
+>   [doc/build/phase-7-runbook.md](doc/build/phase-7-runbook.md) — exercise
+>   public, private, and **fork** PRs (Option B/C in TESTING.md). The
+>   `Phase 7 Sandbox Validate` workflow + `e2e/validate_sandbox.py` are ready to
+>   run via workflow_dispatch.
+> - Then mark P7 ✅ here and move to P10 (performance & scale).
 
 Prove the Action against the live GitHub API before deeper hardening.
 
@@ -77,7 +92,7 @@ completed in parallel. Acceptance criteria all met:
 
 Coverage: 76 tests green.
 
-## Phase 9 — security & supply-chain hardening (in progress)
+## Phase 9 — security & supply-chain hardening ✅ DONE
 
 Landed:
 
@@ -101,10 +116,16 @@ Deferred to **P11** (release engineering, where the release workflow lives):
 **SBOM generation** and **signed releases/tags** — these are release-time
 artifacts and belong with reproducible packaging.
 
-Coverage: 90 tests green.
+Plus (post-Phase-9 hardening): opt-in `policy.model.require_model` /
+`block_when_missing` to guarantee the LLM summary ran; CodeQL PR permissions
+fixed (`actions: read` + skip Dependabot read-only-token runs); Dependabot
+updates grouped into a single PR.
+
+Coverage: 93 tests green.
 
 ## Open operational items (not new phases)
 
-- Push `main` to `origin` (currently several commits ahead).
+- `main` is in sync with `origin`; supply-chain automation (grouped Dependabot +
+  CodeQL) is live and green.
 - Cut `v0.1.0` once P7 validates live behavior (see RELEASING.md) — note: the
   first GA tag is **v1.0** at the end of P12.
