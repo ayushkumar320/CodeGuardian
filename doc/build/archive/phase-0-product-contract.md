@@ -6,9 +6,9 @@
 > single source of truth the implementation team builds against in Phase 1+.
 > No code is scaffolded in Phase 0.
 
-Authority: for MVP conflicts, this contract + [PLAN](../Phase-Wise-Build-Plan.md)
-override the [blueprint](../CodeGuardian-AI-Blueprint.md). See
-[CLAUDE.md](../../CLAUDE.md) strict rules.
+Authority: for MVP conflicts, this contract + [PLAN](../../Phase-Wise-Build-Plan.md)
+override the [blueprint](../../CodeGuardian-AI-Blueprint.md). See
+[CLAUDE.md](../../../CLAUDE.md) strict rules.
 
 ---
 

@@ -36,26 +36,35 @@ on:
   issue_comment:
     types: [created]
 permissions:
-  contents: write
-  pull-requests: write
   checks: write
+  pull-requests: write
   issues: write
+  contents: read          # use `write` only if you enable cross-PR memory
   actions: read
 jobs:
   risk:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
+        with: { fetch-depth: 0 }   # required: full history for the diff
       - uses: your-org/CodeGuardian@v0
+        # No secrets needed. The two inputs below are OPTIONAL — without them
+        # CodeGuardian runs fully in deterministic mode.
         with:
-          groq-api-key: ${{ secrets.GROQ_API_KEY }}
-          hf-token: ${{ secrets.HF_TOKEN }}
+          groq-api-key: ${{ secrets.GROQ_API_KEY }}   # optional
+          hf-token: ${{ secrets.HF_TOKEN }}           # optional
 ```
 
-Provider fallback is **Groq -> Hugging Face -> deterministic**. With no keys,
-the deterministic path still produces the score and recommendations; the model
-only rephrases the summary and must never invent findings.
+**No API keys are required.** Provider fallback is
+**Groq → Hugging Face → deterministic**, and the deterministic path is the
+baseline: it produces the full score, findings, and recommendations with **zero
+model keys**. A model, if configured, only rephrases the summary prose — it can
+never set the score or invent a finding. Groq/HF are an optional nicety, not a
+dependency.
+
+> **Want to try it before installing anything?** You can run the exact same
+> analysis on any local repo with no token and no PR:
+> `scripts/run-local.sh /path/to/repo`. See [TESTING.md](TESTING.md).
 
 ## Product
 
@@ -154,6 +163,17 @@ Out of scope:
 
 ## Current Status
 
-- MVP delivered
-- next phase: real-PR validation and E2E hardening
-- target outcome: a trusted `v1` GitHub Action focused on the PR merge page
+Working toward a trusted **v1.0** GitHub Action focused on the PR merge page.
+
+- **MVP (phases 0–6): delivered** — deterministic PR analysis, LangGraph agents,
+  `@codeguardian` loop, GitHub-native memory.
+- **Robustness & observability (phase 8): done** — never-crash boundary, retries
+  with timeouts, secret-safe logging, job summary, `--selfcheck`.
+- **Security & supply-chain (phase 9): done** — egress secret-scan, prompt-injection
+  corpus, fork-PR safety, SHA-pinned actions, CodeQL, Dependabot. See
+  [SECURITY.md](SECURITY.md).
+- **In flight:** live real-PR validation on a sandbox repo (phase 7), then
+  performance, release engineering, and beta to v1.0.
+
+See [CURRENT-PHASE.md](CURRENT-PHASE.md) for the live status and
+[doc/build/README.md](doc/build/README.md) for the full roadmap.

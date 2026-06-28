@@ -72,7 +72,7 @@ Pick the topic, open only the listed target.
 | Prompt-injection validation corpus and evidence-only model rule | P9 ; WFI §19 ; `tests/injection_corpus.py` ; `tests/test_phase9_security.py` ; `models.Finding` (evidence required) |
 | Output secret scanning before posting (egress) | P9 ; `src/codeguardian/security.py` (`safe_output`, `find_secrets`) ; `github/client.py` (`_scrub`) |
 | Secret reporting / vulnerability disclosure / security posture | `SECURITY.md` ; `THREAT-MODEL.md` |
-| Supply-chain hardening (SHA-pinned actions, Dependabot, CodeQL) | P9 ; `.github/workflows/*.yml` (SHA pins) ; `.github/dependabot.yml` ; `.github/workflows/codeql.yml` |
+| Supply-chain hardening (SHA-pinned actions, Dependabot, CodeQL) | P9 ; `.github/workflows/*.yml` + `action.yml` (SHA pins) ; `.github/dependabot.yml` ; `.github/workflows/codeql.yml` |
 | SBOM / signed releases (release-time supply chain) | P9 "Deliverables" ; deferred to P11 release workflow ; [RELEASING.md](RELEASING.md) |
 | Performance bottlenecks to measure first | P10 "Current cost centers (to measure first)" |
 | Shared import graph / bounded repo walk / batched diff parsing | P10 "Scope", "Deliverables" |
