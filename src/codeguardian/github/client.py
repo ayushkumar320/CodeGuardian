@@ -12,6 +12,7 @@ import io
 import json
 import os
 import zipfile
+from math import ceil
 from typing import Optional
 
 import requests
@@ -166,15 +167,8 @@ class GitHubClient:
         """
         if not self.enabled:
             return []
-        url = f"{self.api_url}/repos/{owner}/{repo}/actions/artifacts"
-        try:
-            resp = requests.get(
-                url, headers=self._headers(),
-                params={"name": _REPORT_ARTIFACT, "per_page": scan}, timeout=_TIMEOUT,
-            )
-            resp.raise_for_status()
-            artifacts = resp.json().get("artifacts", [])
-        except (requests.RequestException, ValueError):
+        artifacts = self._list_artifacts(owner, repo, scan)
+        if not artifacts:
             return []
 
         out: list[dict] = []
@@ -187,6 +181,30 @@ class GitHubClient:
                 if len(out) >= limit:
                     break
         return out
+
+    def _list_artifacts(self, owner: str, repo: str, scan: int) -> list[dict]:
+        url = f"{self.api_url}/repos/{owner}/{repo}/actions/artifacts"
+        per_page = 100
+        pages = max(1, ceil(scan / per_page))
+        out: list[dict] = []
+        try:
+            for page in range(1, pages + 1):
+                resp = requests.get(
+                    url,
+                    headers=self._headers(),
+                    params={"name": _REPORT_ARTIFACT, "per_page": per_page, "page": page},
+                    timeout=_TIMEOUT,
+                )
+                resp.raise_for_status()
+                items = resp.json().get("artifacts", [])
+                if not items:
+                    break
+                out.extend(items)
+                if len(items) < per_page or len(out) >= scan:
+                    break
+        except (requests.RequestException, ValueError):
+            return []
+        return out[:scan]
 
     def _download_report_json(self, artifact_id: Optional[int]) -> Optional[dict]:
         if artifact_id is None:
