@@ -19,7 +19,7 @@ runs zero-key deterministic. Detail: [archive/](doc/build/archive/).
 
 | Phase | What | State |
 |-------|------|-------|
-| **P7** | **Real-PR validation & live-API hardening** | **▶ NEXT — start here** |
+| **P7** | **Real-PR validation & live-API hardening** | **▶ IN PROGRESS — sandbox validation next** |
 | P8 | Robustness & observability (never-crash, retries, job summary) | ⬜ pending |
 | P9 | Security & supply-chain hardening (fork-PR safety, injection corpus) | ⬜ pending |
 | P10 | Performance & scale (shared import graph, memory compaction) | ⬜ pending |
@@ -37,6 +37,22 @@ Prove the Action against the live GitHub API before deeper hardening.
   branch push, fork read-only token + no secrets, rate limits, large diffs); add
   an `e2e/` harness.
 - **Keep working:** zero-key deterministic path, quiet defaults, evidence-cited.
+
+### Repo-side groundwork completed
+
+- check run update-or-create path added
+- sticky comment and reply pagination covered by tests
+- artifact history scan paginates across multiple pages
+- fork PRs skip forbidden writes and degrade safely
+- `recheck` fetches the PR head repo/ref more reliably
+- sandbox validator harness + workflow-dispatch runner added
+
+### Remaining Phase 7 gate
+
+Run the real sandbox validation described in
+[doc/build/phase-7-runbook.md](doc/build/phase-7-runbook.md). Phase 7 should not
+be marked complete until public, private, and fork PR behavior is validated on
+the live GitHub API.
 
 ## Open operational items (not new phases)
 
