@@ -144,6 +144,7 @@ Python package at `src/codeguardian/`. Stack: Python + LangGraph + Pydantic.
 | Action entrypoint (publish + exit code, failure boundary, job summary, `--selfcheck` dispatch) | `src/codeguardian/__main__.py` |
 | Action metadata (inputs) / example workflow / CI / policy | `action.yml`, `.github/workflows/codeguardian.yml`, `.github/workflows/ci.yml`, `.codeguardian/policy.yml` |
 | Install / troubleshooting / changelog / release docs | `INSTALL.md`, `TROUBLESHOOTING.md`, `CHANGELOG.md`, `RELEASING.md` |
+| How to run/test (local no-token, sandbox Action, e2e harness) | `TESTING.md` ; `scripts/run-local.sh` ; `e2e/` ; `doc/build/phase-7-runbook.md` |
 | Tests | `tests/` |
 
 ## Build prompt preflight

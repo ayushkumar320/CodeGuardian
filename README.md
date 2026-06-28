@@ -143,6 +143,7 @@ Out of scope:
 ## Docs
 
 - [INSTALL.md](INSTALL.md) — install and configure the Action
+- [TESTING.md](TESTING.md) — **run it locally with no token**, on a sandbox repo, or via the e2e harness
 - [SECURITY.md](SECURITY.md) — security policy, vulnerability reporting, hardening
 - [THREAT-MODEL.md](THREAT-MODEL.md) — threats, mitigations, and residual risks
 - [TROUBLESHOOTING.md](TROUBLESHOOTING.md) — common setup and runtime issues
