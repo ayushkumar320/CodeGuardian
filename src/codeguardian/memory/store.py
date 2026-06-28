@@ -14,11 +14,40 @@ import json
 import os
 import subprocess
 import tempfile
+from datetime import datetime, timedelta, timezone
 from typing import Protocol
 
 from .record import MemoryRecord
 
 _MEMORY_FILE = "memory.jsonl"
+
+
+def compact_records(
+    records: list[MemoryRecord], max_records: int, retention_days: int
+) -> list[MemoryRecord]:
+    """Apply retention to keep the memory branch bounded (Phase 10).
+
+    Drops records older than ``retention_days`` (when > 0), then keeps the
+    ``max_records`` most recent by ``created_at``. Order is preserved otherwise.
+    """
+    kept = records
+    if retention_days and retention_days > 0:
+        cutoff = datetime.now(timezone.utc) - timedelta(days=retention_days)
+        out = []
+        for r in kept:
+            try:
+                ts = datetime.fromisoformat(r.created_at)
+            except (ValueError, TypeError):
+                out.append(r)  # unparseable timestamp -> keep, don't lose data
+                continue
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=timezone.utc)
+            if ts >= cutoff:
+                out.append(r)
+        kept = out
+    if max_records and max_records > 0 and len(kept) > max_records:
+        kept = kept[-max_records:]
+    return kept
 
 
 class MemoryStore(Protocol):
@@ -27,8 +56,10 @@ class MemoryStore(Protocol):
 
 
 class LocalMemoryStore:
-    def __init__(self, path: str):
+    def __init__(self, path: str, max_records: int = 0, retention_days: int = 0):
         self.path = path
+        self.max_records = max_records
+        self.retention_days = retention_days
 
     def load(self) -> list[MemoryRecord]:
         if not os.path.isfile(self.path):
@@ -47,6 +78,14 @@ class LocalMemoryStore:
 
     def append(self, record: MemoryRecord) -> None:
         os.makedirs(os.path.dirname(os.path.abspath(self.path)), exist_ok=True)
+        records = self.load() + [record]
+        if self.max_records or self.retention_days:
+            compacted = compact_records(records, self.max_records, self.retention_days)
+            if len(compacted) != len(records):  # rewrite only when compaction trims
+                with open(self.path, "w", encoding="utf-8") as fh:
+                    for r in compacted:
+                        fh.write(r.model_dump_json() + "\n")
+                return
         with open(self.path, "a", encoding="utf-8") as fh:
             fh.write(record.model_dump_json() + "\n")
 
@@ -55,9 +94,11 @@ class GitBranchMemoryStore:
     """Reads/writes ``memory.jsonl`` on an orphan-ish branch via git. Best-effort:
     any git failure degrades to an empty/no-op so analysis never breaks."""
 
-    def __init__(self, repo_root: str, branch: str):
+    def __init__(self, repo_root: str, branch: str, max_records: int = 0, retention_days: int = 0):
         self.repo_root = repo_root
         self.branch = branch
+        self.max_records = max_records
+        self.retention_days = retention_days
 
     def _git(self, *args: str, check: bool = False) -> subprocess.CompletedProcess:
         return subprocess.run(
@@ -95,8 +136,10 @@ class GitBranchMemoryStore:
             return
 
         existing = self.load()
-        lines = [r.model_dump_json() for r in existing] + [record.model_dump_json()]
-        content = "\n".join(lines) + "\n"
+        records = compact_records(
+            existing + [record], self.max_records, self.retention_days
+        )
+        content = "\n".join(r.model_dump_json() for r in records) + "\n"
         msg = f"memory: PR #{record.pr_number} @ {record.head_sha[:7]}"
 
         # Commit on an isolated worktree so the checked-out branch is never

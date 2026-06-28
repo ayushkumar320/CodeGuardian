@@ -62,6 +62,9 @@ class Memory(BaseModel):
     branch: str = "codeguardian-memory"
     max_results: int = 3
     min_similarity: float = 0.34
+    # Retention/compaction (Phase 10) — keep the memory branch bounded.
+    max_records: int = 500  # keep at most this many most-recent records
+    retention_days: int = 180  # drop records older than this (0 = no age limit)
 
 
 class Performance(BaseModel):

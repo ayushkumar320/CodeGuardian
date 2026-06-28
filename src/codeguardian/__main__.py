@@ -110,7 +110,12 @@ def _internal_error_report(pr: PrContext, policy: Policy, message: str) -> Repor
 def _memory_store(repo_root: str, policy: Policy):
     if not policy.memory.enabled:
         return None
-    return GitBranchMemoryStore(repo_root, policy.memory.branch)
+    return GitBranchMemoryStore(
+        repo_root,
+        policy.memory.branch,
+        max_records=policy.memory.max_records,
+        retention_days=policy.memory.retention_days,
+    )
 
 
 def _can_publish(pr: PrContext) -> bool:

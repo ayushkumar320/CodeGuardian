@@ -24,6 +24,10 @@ All notable changes to CodeGuardian AI. Format based on
   max_diff_files` (default 300) are analyzed top-N by change size, with a clear
   "diff too large, analyzed top N" note surfaced on the check and sticky comment
   (new `Report.notes`).
+- **Memory retention/compaction** (Phase 10): the memory branch is now bounded —
+  `memory.compact_records` drops records older than `policy.memory.retention_days`
+  (default 180) and keeps the `policy.memory.max_records` (default 500) most
+  recent. Applied on every append in both the local and git-branch stores.
 
 ### Changed
 - **Command trigger is now `/codeguardian`** (was `@codeguardian`). The `@` form
