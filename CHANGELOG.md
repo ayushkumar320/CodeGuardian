@@ -17,6 +17,9 @@ All notable changes to CodeGuardian AI. Format based on
   skips vendored/build/minified/lockfiles, and caps file count + per-file size.
   The import graph and `repository_context` both use it. Caps are configurable via
   the new `policy.performance` (`max_files`, `max_file_bytes`).
+- **Batched diff** (Phase 10): the PR diff now runs a single `git diff` and splits
+  the unified output per file, instead of one `git diff -- <path>` per changed
+  file (was O(files) git invocations).
 
 ### Changed
 - **Command trigger is now `/codeguardian`** (was `@codeguardian`). The `@` form
