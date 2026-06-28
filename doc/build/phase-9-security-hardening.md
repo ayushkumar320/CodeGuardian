@@ -32,7 +32,7 @@ Excluded:
 
 ## Deliverables
 
-- `SECURITY.md`, `THREAT-MODEL.md`.
+- `SECURITY.md`, `../THREAT-MODEL.md`.
 - Prompt-injection test corpus + tests.
 - Output secret-scan step before any post.
 - SHA-pinned actions; Dependabot config; CodeQL workflow; SBOM in releases;

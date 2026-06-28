@@ -35,7 +35,7 @@ runs zero-key deterministic. Detail: [archive/](doc/build/archive/).
 >
 > **When resuming, start here:**
 > - Quick local smoke (no token, no PR): `scripts/run-local.sh /path/to/repo` —
->   see [TESTING.md](TESTING.md) Option A.
+>   see [TESTING.md](doc/TESTING.md) Option A.
 > - Live validation: install the Action on a sandbox repo and follow
 >   [doc/build/phase-7-runbook.md](doc/build/phase-7-runbook.md) — exercise
 >   public, private, and **fork** PRs (Option B/C in TESTING.md). The

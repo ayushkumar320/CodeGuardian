@@ -86,7 +86,7 @@ Grant only what you use. Each scope and why:
 | `contents: write` | push the `codeguardian-memory` branch only | `memory.enabled: false` → set back to `read` |
 
 The minimal read-only footprint (no comment, no memory) is `checks: write` +
-`contents: read`. See [SECURITY.md](SECURITY.md) and
+`contents: read`. See [SECURITY.md](../SECURITY.md) and
 [THREAT-MODEL.md](THREAT-MODEL.md) for the full security posture.
 
 ## 3. (Optional) Add a model provider
