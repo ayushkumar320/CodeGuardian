@@ -15,6 +15,7 @@ Usage examples:
 from __future__ import annotations
 
 import argparse
+import io
 import json
 import os
 import sys
@@ -22,6 +23,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import zipfile
 
 SUMMARY_ANCHOR = "<!-- codeguardian-ai-summary -->"
 CHECK_NAME = "CodeGuardian Risk"
@@ -87,6 +89,25 @@ class GitHub:
         )
         return data.get("artifacts", [])
 
+    def artifact_report_json(self, owner: str, repo: str, artifact_id: int) -> dict | None:
+        req = urllib.request.Request(
+            f"{API}/repos/{owner}/{repo}/actions/artifacts/{artifact_id}/zip",
+            headers={
+                "Accept": "application/vnd.github+json",
+                "X-GitHub-Api-Version": "2022-11-28",
+                "Authorization": f"Bearer {self.token}",
+            },
+            method="GET",
+        )
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            payload = resp.read()
+        try:
+            with zipfile.ZipFile(io.BytesIO(payload)) as zf:
+                with zf.open("codeguardian-report.json") as fh:
+                    return json.load(fh)
+        except (KeyError, ValueError, zipfile.BadZipFile):
+            return None
+
     def post_comment(self, owner: str, repo: str, pr: int, body: str) -> dict:
         return self.request(
             "POST",
@@ -112,6 +133,26 @@ def wait_for(predicate, *, timeout_s: int, interval_s: int, label: str):
     raise SystemExit(f"Timed out waiting for {label} after {timeout_s}s")
 
 
+def command_reply_count(comments: list[dict]) -> int:
+    return sum(1 for c in comments if REPLY_MARKER in (c.get("body") or ""))
+
+
+def latest_report_for_pr(gh: GitHub, owner: str, repo: str, pr: int, artifacts: list[dict]) -> tuple[dict, dict] | tuple[None, None]:
+    ordered = sorted(
+        [a for a in artifacts if a.get("name") == ARTIFACT_NAME and not a.get("expired")],
+        key=lambda a: a.get("created_at", ""),
+        reverse=True,
+    )
+    for artifact in ordered:
+        aid = artifact.get("id")
+        if not aid:
+            continue
+        report = gh.artifact_report_json(owner, repo, aid)
+        if report and report.get("pr", {}).get("number") == pr:
+            return artifact, report
+    return None, None
+
+
 def cmd_verify_pr(args) -> int:
     gh = GitHub(args.token)
     owner, repo = split_repo(args.repo)
@@ -135,13 +176,19 @@ def cmd_verify_pr(args) -> int:
     if len(sticky) > 1:
         raise SystemExit(f"Expected at most one sticky summary comment, found {len(sticky)}")
 
-    artifacts = gh.artifacts(owner, repo)
+    artifacts = gh.artifacts(owner, repo, per_page=max(args.artifact_scan, 30))
     report_artifacts = [a for a in artifacts if a.get("name") == ARTIFACT_NAME and not a.get("expired")]
+    latest_artifact, latest_report = latest_report_for_pr(gh, owner, repo, args.pr, report_artifacts)
+    if args.expect_artifact and latest_report is None:
+        raise SystemExit("Expected a matching report artifact for this PR, but none was found")
 
     print("verify-pr: ok")
     print(f"- check runs: {len(matching)}")
     print(f"- sticky comments: {len(sticky)}")
     print(f"- available report artifacts: {len(report_artifacts)}")
+    if latest_artifact and latest_report:
+        print(f"- latest matching artifact id: {latest_artifact.get('id')}")
+        print(f"- artifact report pr: {latest_report.get('pr', {}).get('number')}")
     for run in matching[:3]:
         print(f"- check conclusion: {run.get('conclusion')} status={run.get('status')}")
     return 0
@@ -150,7 +197,9 @@ def cmd_verify_pr(args) -> int:
 def cmd_send_command(args) -> int:
     gh = GitHub(args.token)
     owner, repo = split_repo(args.repo)
-    before = {c.get("id") for c in gh.comments(owner, repo, args.pr)}
+    before_comments = gh.comments(owner, repo, args.pr)
+    before = {c.get("id") for c in before_comments}
+    before_reply_count = command_reply_count(before_comments)
     created = gh.post_comment(owner, repo, args.pr, args.body)
     print(f"posted comment id={created.get('id')}")
 
@@ -170,6 +219,14 @@ def cmd_send_command(args) -> int:
         label="CodeGuardian command reply",
     )
     print("command reply: ok")
+    after_comments = gh.comments(owner, repo, args.pr)
+    after_reply_count = command_reply_count(after_comments)
+    if args.expect_single_reply and after_reply_count != before_reply_count + 1:
+        raise SystemExit(
+            "Expected exactly one new CodeGuardian reply marker after posting the command"
+        )
+    print(f"- reply markers before: {before_reply_count}")
+    print(f"- reply markers after: {after_reply_count}")
     print(reply.get("body", "")[:600])
     return 0
 
@@ -187,6 +244,8 @@ def build_parser() -> argparse.ArgumentParser:
     verify.add_argument("--repo", required=True)
     verify.add_argument("--pr", required=True, type=int)
     verify.add_argument("--expect-sticky", action="store_true")
+    verify.add_argument("--expect-artifact", action="store_true")
+    verify.add_argument("--artifact-scan", type=int, default=50)
     verify.add_argument("--timeout", type=int, default=120)
     verify.add_argument("--interval", type=int, default=5)
     verify.set_defaults(func=cmd_verify_pr)
@@ -195,6 +254,7 @@ def build_parser() -> argparse.ArgumentParser:
     send.add_argument("--repo", required=True)
     send.add_argument("--pr", required=True, type=int)
     send.add_argument("--body", required=True)
+    send.add_argument("--expect-single-reply", action="store_true")
     send.add_argument("--timeout", type=int, default=120)
     send.add_argument("--interval", type=int, default=5)
     send.set_defaults(func=cmd_send_command)
