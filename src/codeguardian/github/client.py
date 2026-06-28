@@ -52,7 +52,6 @@ class GitHubClient:
     ) -> Optional[int]:
         if not self.enabled:
             return None
-        url = f"{self.api_url}/repos/{owner}/{repo}/check-runs"
         body = {
             "name": CHECK_NAME,
             "head_sha": head_sha,
@@ -60,9 +59,30 @@ class GitHubClient:
             "conclusion": conclusion,
             "output": {"title": title, "summary": summary[:65000]},
         }
-        resp = requests.post(url, headers=self._headers(), json=body, timeout=_TIMEOUT)
+        existing = self._find_check_run(owner, repo, head_sha)
+        if existing is not None:
+            url = f"{self.api_url}/repos/{owner}/{repo}/check-runs/{existing}"
+            resp = requests.patch(url, headers=self._headers(), json=body, timeout=_TIMEOUT)
+        else:
+            url = f"{self.api_url}/repos/{owner}/{repo}/check-runs"
+            resp = requests.post(url, headers=self._headers(), json=body, timeout=_TIMEOUT)
         resp.raise_for_status()
         return resp.json().get("id")
+
+    def _find_check_run(self, owner: str, repo: str, head_sha: str) -> Optional[int]:
+        url = f"{self.api_url}/repos/{owner}/{repo}/commits/{head_sha}/check-runs"
+        resp = requests.get(
+            url,
+            headers=self._headers(),
+            params={"check_name": CHECK_NAME, "per_page": 100},
+            timeout=_TIMEOUT,
+        )
+        resp.raise_for_status()
+        runs = resp.json().get("check_runs", [])
+        for run in runs:
+            if run.get("name") == CHECK_NAME:
+                return run.get("id")
+        return None
 
     # --- Sticky comment ---------------------------------------------------
     def upsert_sticky_comment(

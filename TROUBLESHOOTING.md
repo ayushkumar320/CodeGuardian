@@ -11,6 +11,7 @@
 | Merge isn't blocked despite High/Critical | Advisory mode, or check not required | Set `mode: guarded` AND mark `CodeGuardian Risk` a required status check |
 | Duplicate bot comments | Not possible by design (sticky anchor) — if seen, multiple workflows | Ensure only one CodeGuardian workflow is installed |
 | Action is slow on first run | Cold `pip install` of dependencies | The `cache: pip` setup caches subsequent runs |
+| Fork PR shows artifacts but no sticky comment/check update | Fork `pull_request` runs have a read-only token and no secrets | Expected safe degradation. Deterministic analysis still runs, but write operations are skipped on fork-originated PRs |
 
 ## Getting more detail
 

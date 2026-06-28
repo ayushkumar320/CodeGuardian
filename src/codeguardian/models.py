@@ -85,6 +85,9 @@ class PrContext(BaseModel):
     head_sha: str
     title: str = ""
     installation_id: Optional[int] = None
+    is_fork: bool = False
+    head_ref: str = ""
+    head_repo_clone_url: str = ""
 
 
 class DiffFile(BaseModel):

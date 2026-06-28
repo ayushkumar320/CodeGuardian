@@ -75,8 +75,15 @@ def _memory_store(repo_root: str, policy: Policy):
     return GitBranchMemoryStore(repo_root, policy.memory.branch)
 
 
+def _can_publish(pr: PrContext) -> bool:
+    # Fork-originated pull_request runs get a read-only token and no secrets.
+    # Skip write attempts entirely so the run degrades quietly instead of
+    # emitting predictable permission failures.
+    return not pr.is_fork
+
+
 def _analyze_and_publish(repo_root: str, pr: PrContext, policy: Policy) -> Report:
-    store = _memory_store(repo_root, policy)
+    store = _memory_store(repo_root, policy) if _can_publish(pr) else None
     report, narrative = run_analysis(repo_root, pr, policy, memory_store=store)
     json_path = _write_artifacts(report, policy, narrative)
 
@@ -89,6 +96,10 @@ def _analyze_and_publish(repo_root: str, pr: PrContext, policy: Policy) -> Repor
 
     client = GitHubClient()
     title = f"{report.risk.score}/10 {report.risk.level.value} — {'blocked' if report.risk.blocking else 'allowed'}"
+    if not _can_publish(pr):
+        print("CodeGuardian: fork PR detected; skipping check/comment/memory writes.")
+        print(f"CodeGuardian: {title} (provider={report.provider.value})  report: {json_path}")
+        return report
     try:
         client.publish_check(
             pr.owner, pr.repo, pr.head_sha, check_conclusion(report), title,
@@ -172,21 +183,38 @@ def _recheck(client: GitHubClient, owner: str, repo: str, number: int,
         return
     head_sha = pull.get("head", {}).get("sha", "")
     base_sha = pull.get("base", {}).get("sha", "")
+    head_ref = pull.get("head", {}).get("ref", "")
+    head_repo = pull.get("head", {}).get("repo") or {}
+    head_clone = head_repo.get("clone_url", "")
+    base_repo = pull.get("base", {}).get("repo") or {}
+    is_fork = bool(head_repo.get("full_name") and base_repo.get("full_name")
+                   and head_repo.get("full_name") != base_repo.get("full_name"))
     # Fetch the PR head so the diff is available in this (comment-triggered) job.
     try:
-        subprocess.run(
-            ["git", "-C", repo_root, "fetch", "origin", f"pull/{number}/head"],
-            check=False, capture_output=True,
-        )
-        subprocess.run(
-            ["git", "-C", repo_root, "fetch", "origin", base_sha],
-            check=False, capture_output=True,
-        )
+        if head_clone and head_ref:
+            subprocess.run(
+                [
+                    "git", "-C", repo_root, "fetch", "--no-tags", head_clone,
+                    f"+refs/heads/{head_ref}:refs/remotes/codeguardian-pr/{number}",
+                ],
+                check=False, capture_output=True,
+            )
+        else:
+            subprocess.run(
+                ["git", "-C", repo_root, "fetch", "origin", f"pull/{number}/head"],
+                check=False, capture_output=True,
+            )
+        if base_sha:
+            subprocess.run(
+                ["git", "-C", repo_root, "fetch", "origin", base_sha],
+                check=False, capture_output=True,
+            )
     except OSError:
         pass
     pr = PrContext(
         owner=owner, repo=repo, number=number,
         base_sha=base_sha, head_sha=head_sha, title=pull.get("title", ""),
+        is_fork=is_fork, head_ref=head_ref, head_repo_clone_url=head_clone,
     )
     _analyze_and_publish(repo_root, pr, policy)
 

@@ -54,6 +54,17 @@ Open any PR. The Action runs in **deterministic mode** (no keys) and:
 First-run success = the check appears and is green/neutral on a small PR, and the
 report clearly says *deterministic mode*.
 
+### Fork PR note
+
+For `pull_request` events opened from forks, GitHub provides a read-only token
+and no repository secrets. CodeGuardian therefore degrades safely:
+
+- deterministic analysis still runs
+- run artifacts are still produced
+- check/comment/memory writes are skipped rather than failing noisily
+
+This is the intended safe behavior for untrusted fork-originated code.
+
 ## 3. (Optional) Add a model provider
 
 CodeGuardian routes **Groq → Hugging Face → deterministic**. Models only rephrase

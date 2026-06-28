@@ -47,6 +47,10 @@ def parse_pr_context(event: dict, env: Optional[dict] = None) -> Optional[PrCont
     base = pr.get("base", {})
     head = pr.get("head", {})
     installation = event.get("installation", {}).get("id")
+    head_repo = head.get("repo") or {}
+    base_repo = base.get("repo") or {}
+    head_full = head_repo.get("full_name", "")
+    base_full = base_repo.get("full_name", "")
 
     if number is None:
         return None
@@ -59,6 +63,9 @@ def parse_pr_context(event: dict, env: Optional[dict] = None) -> Optional[PrCont
         head_sha=head.get("sha", env.get("GITHUB_SHA", "")),
         title=pr.get("title", ""),
         installation_id=installation,
+        is_fork=bool(head_full and base_full and head_full != base_full),
+        head_ref=head.get("ref", ""),
+        head_repo_clone_url=head_repo.get("clone_url", ""),
     )
 
 
