@@ -23,8 +23,8 @@ runs zero-key deterministic. Detail: [archive/](doc/build/archive/).
 | P8 | Robustness & observability (never-crash, retries, job summary) | ✅ DONE — all acceptance criteria met |
 | P9 | Security & supply-chain hardening (fork-PR safety, injection corpus) | ✅ DONE — code + CI + docs landed; SBOM/signed releases deferred to P11 |
 | P10 | Performance & scale (shared import graph, memory compaction) | ✅ DONE — all acceptance criteria met (minor wall-clock soft-timeout deferred) |
-| **P11** | **Release engineering & Marketplace (reproducible packaging, automation)** | **▶ NEXT** |
-| P12 | Beta, tuning & v1.0 GA | ⬜ pending |
+| P11 | Release engineering & Marketplace (reproducible packaging, automation) | ✅ DONE — code-side complete; Marketplace UI publish is a one-time manual step on first release |
+| **P12** | **Beta, tuning & v1.0 GA** | **▶ NEXT** |
 
 ## 🟡 Phase 7 — partially validated; remainder is a pre-release gate
 
@@ -162,6 +162,30 @@ publishes a partial result mid-run — the large-diff cap already bounds the
 dominant cost, so this is a nice-to-have for a later pass.
 
 Coverage: 114 tests green.
+
+## Phase 11 — release engineering & Marketplace ✅ DONE
+
+Code-side complete; the only remaining step is a **one-time** Marketplace publish
+from the GitHub Release UI on the first tag (`v0.1.0`).
+
+- **Reproducible packaging**: `requirements.lock` (pip-tools, 35 pinned deps).
+  `action.yml` installs from the lockfile + the package with `--no-deps`, so no
+  live PyPI resolution at run time. New CI `lockfile` job keeps the lock in sync
+  with `pyproject.toml`.
+- **Automated release workflow** (`.github/workflows/release.yml`): tag push →
+  tests → version-tag-match check → CHANGELOG-driven release notes → `gh release
+  create` → move the major (`v0`) alias.
+- **Consumer examples** (`examples/`): public, private+Groq, required-check,
+  monorepo, each ready to copy as `.github/workflows/codeguardian.yml`.
+- **Listing polish**: README CI + CodeQL badges; `action.yml` `name`/`description`/
+  `branding`/`author` already in place.
+- **RELEASING.md** rewritten to reflect the automation.
+
+Deferred to first release / P9 carry-over: **SBOM generation** and **signed
+releases**. Both are release-workflow additions and can land alongside the first
+tag without re-cutting work here.
+
+Coverage: 116 tests green.
 
 ## Open operational items (not new phases)
 

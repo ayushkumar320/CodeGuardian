@@ -81,9 +81,10 @@ Pick the topic, open only the listed target.
 | Large-diff cap + truncation note | `graph/nodes.py` (`collect_pr_context`) ; `policy.Performance.max_diff_files` ; `models.Report.notes` |
 | Memory retention / compaction policy | `src/codeguardian/memory/store.py` (`compact_records`) ; `policy.Memory` (`max_records`, `retention_days`) |
 | Performance benchmark harness + budgets | `bench/run_bench.py` ; `bench/README.md` |
-| Release packaging choice (Docker vs locked wheels) | P11 "Scope", "Deliverables" |
-| Automated release workflow / moving `v1` tag / SemVer consumer contract | P11 "Scope", "Deliverables", "Acceptance Criteria" ; [RELEASING.md](doc/RELEASING.md) |
-| Marketplace listing assets / examples / screenshots | P11 "Scope", "Deliverables" |
+| Reproducible packaging (lockfile install, no live PyPI) | `requirements.lock` ; `action.yml` (install steps) ; `.github/workflows/ci.yml` (`lockfile` job) |
+| Automated release workflow / moving major tag / SemVer | `.github/workflows/release.yml` ; [RELEASING.md](doc/RELEASING.md) |
+| Consumer example workflows | [`examples/`](examples/README.md) (public, private+Groq, required-check, monorepo) |
+| Marketplace listing metadata + badges | `action.yml` (`name`/`description`/`branding`/`author`) ; `README.md` (badges) |
 | Beta plan / dogfood repos / false-positive feedback loop | P12 "Scope", "Deliverables", "Acceptance Criteria" |
 | Scoring and threshold tuning for low false positives | P12 "Scope", "Deliverables" |
 | GA readiness / support-triage / post-v1 roadmap | P12 "Scope", "Deliverables" |

@@ -33,7 +33,14 @@ runs:
 
     - name: Install CodeGuardian
       shell: bash
-      run: pip install --quiet --disable-pip-version-check "${{ github.action_path }}"
+      # Reproducible install (Phase 11): deps come from the pinned lockfile, then
+      # the action's own package is installed --no-deps so no live PyPI resolution
+      # happens at run time.
+      run: |
+        pip install --quiet --disable-pip-version-check \
+          -r "${{ github.action_path }}/requirements.lock"
+        pip install --quiet --disable-pip-version-check --no-deps \
+          "${{ github.action_path }}"
 
     - name: Run CodeGuardian
       shell: bash

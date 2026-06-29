@@ -1,0 +1,38 @@
+# Same workflow as public-repo.yml; the "required check" part is a *repo setting*,
+# not a workflow change.
+#
+# Steps once this workflow has run on at least one PR:
+#   1. Settings -> Branches -> Add (or edit) a branch protection rule for `main`.
+#   2. Check "Require status checks to pass before merging".
+#   3. Search for and select **`CodeGuardian Risk`** in the status-check list.
+#   4. Save.
+#
+# Optional: also flip your policy mode to be stricter. In .codeguardian/policy.yml:
+#     mode: guarded     # block merge on high-severity findings; warn on others
+# or  mode: strict      # block on anything medium and above
+# Default is `advisory` (never blocks).
+name: CodeGuardian Risk
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  workflow_dispatch:
+permissions:
+  contents: write
+  pull-requests: write
+  checks: write
+  issues: write
+  actions: read
+concurrency:
+  group: codeguardian-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  risk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: ayushkumar320/CodeGuardian@v0

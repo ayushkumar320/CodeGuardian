@@ -6,6 +6,19 @@ All notable changes to CodeGuardian AI. Format based on
 
 ## [Unreleased]
 
+### Added
+- **Reproducible packaging** (Phase 11): `requirements.lock` pins every transitive
+  dependency. The Action installs from the lockfile and then installs its own
+  package with `--no-deps`, so there is no live PyPI resolution at run time. CI's
+  new `lockfile` job verifies the lock stays in sync with `pyproject.toml`.
+- **Automated release workflow** (Phase 11):
+  [`.github/workflows/release.yml`](.github/workflows/release.yml) — pushing a
+  `vX.Y.Z` tag runs tests, extracts the matching CHANGELOG section as notes,
+  creates the GitHub Release, and moves the major (`v0`) alias consumers pin to.
+- **Consumer examples** (Phase 11): [`examples/`](examples/README.md) — ready-to-copy
+  workflows for public, private (with Groq), required-check, and monorepo setups.
+- README CI + CodeQL badges.
+
 ### Performance
 - **Import graph built once per run** (Phase 10): the dependency, test, types, and
   architecture analyzers previously each rebuilt the JS/TS import graph (4-5 full

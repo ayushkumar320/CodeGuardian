@@ -1,0 +1,41 @@
+# Monorepo example.
+#
+# CodeGuardian already scopes itself to changed files in the diff, so on a large
+# monorepo you usually don't need a custom path filter — the file caps in
+# policy.performance (max_files, max_diff_files) keep one run bounded.
+#
+# What helps on monorepos is:
+#   1. set `concurrency` so superseded PR commits don't pile up runs (below),
+#   2. tune policy.performance and policy.architecture.layers in
+#      .codeguardian/policy.yml to your repo layout,
+#   3. optionally narrow `pull_request.paths` if you really do want CodeGuardian
+#      to skip some sub-tree entirely.
+name: CodeGuardian Risk
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+    # Uncomment to scope to changes under specific packages only:
+    # paths:
+    #   - "apps/**"
+    #   - "packages/**"
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  workflow_dispatch:
+permissions:
+  contents: write
+  pull-requests: write
+  checks: write
+  issues: write
+  actions: read
+concurrency:
+  group: codeguardian-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  risk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: ayushkumar320/CodeGuardian@v0

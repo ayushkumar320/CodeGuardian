@@ -1,5 +1,8 @@
 # CodeGuardian AI
 
+[![CI](https://github.com/ayushkumar320/CodeGuardian/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ayushkumar320/CodeGuardian/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/ayushkumar320/CodeGuardian/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/ayushkumar320/CodeGuardian/actions/workflows/codeql.yml)
+
 **Know what breaks before you merge.**
 
 CodeGuardian AI is a **GitHub-Action-native pre-merge risk checker**. It runs on

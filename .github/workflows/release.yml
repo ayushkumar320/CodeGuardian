@@ -1,0 +1,77 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+permissions:
+  contents: write   # create the Release and move the major tag
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: |
+          pip install --quiet -r requirements.lock
+          pip install --quiet --no-deps .
+          pip install --quiet pytest
+
+      - name: Test
+        run: pytest -q
+
+      - name: Verify tag matches pyproject version
+        run: |
+          tag="${GITHUB_REF#refs/tags/v}"
+          pkg=$(python -c "import tomllib,sys; print(tomllib.loads(open('pyproject.toml','rb').read().decode())['project']['version'])")
+          if [ "$tag" != "$pkg" ]; then
+            echo "::error::tag v$tag does not match pyproject version $pkg"
+            exit 1
+          fi
+
+      - name: Extract release notes from CHANGELOG
+        id: notes
+        run: |
+          version="${GITHUB_REF#refs/tags/v}"
+          python - "$version" <<'PY' > release-notes.md
+          import re, sys
+          version = sys.argv[1]
+          text = open("CHANGELOG.md", encoding="utf-8").read()
+          # Capture the body under "## [<version>] - …" until the next "## ["
+          pat = re.compile(rf"^##\s*\[{re.escape(version)}\][^\n]*\n(.*?)(?=^##\s*\[)", re.S | re.M)
+          m = pat.search(text)
+          if not m:
+              print(f"_No CHANGELOG section for v{version}; see commit history._")
+          else:
+              print(m.group(1).strip())
+          PY
+          echo "notes-path=release-notes.md" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          gh release create "$tag" \
+            --title "$tag" \
+            --notes-file release-notes.md \
+            --verify-tag
+
+      - name: Move the major tag (e.g. v0 -> v0.X.Y)
+        # Consumers pin `@v0`; force-update it on every minor/patch release.
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          major="${tag%%.*}"   # v0.1.0 -> v0
+          git config user.email "codeguardian@users.noreply.github.com"
+          git config user.name  "CodeGuardian Release"
+          git tag -f "$major" "$tag"
+          git push -f origin "$major"

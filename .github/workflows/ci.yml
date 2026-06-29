@@ -25,6 +25,24 @@ jobs:
       - name: Run tests (integration fixtures build real git repos)
         run: pytest -q
 
+  lockfile:
+    # The Action installs from requirements.lock for reproducibility (Phase 11);
+    # regenerate it whenever pyproject.toml deps change and commit the result.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+      - name: Verify requirements.lock is in sync with pyproject.toml
+        run: |
+          pip install --quiet pip-tools
+          pip-compile --strip-extras --quiet --output-file=/tmp/requirements.lock pyproject.toml
+          diff -u requirements.lock /tmp/requirements.lock || {
+            echo "::error::requirements.lock is out of sync with pyproject.toml; run: pip-compile --strip-extras --output-file=requirements.lock pyproject.toml"
+            exit 1
+          }
+
   action-smoke:
     # Validates the packaged Action runs in deterministic mode with no keys.
     runs-on: ubuntu-latest
