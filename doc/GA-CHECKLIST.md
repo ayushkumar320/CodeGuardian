@@ -39,7 +39,7 @@ green). Before GA, the remaining gates must run on a real sandbox:
 - [ ] **Private repo** behavior.
 - [ ] **Fork PR safety**: read-only token, no write attempts, no crash.
 
-See [doc/build/phase-7-runbook.md](build/phase-7-runbook.md).
+See [doc/build/archive/phase-7-runbook.md](build/archive/phase-7-runbook.md).
 
 ## 5. Docs & policy
 

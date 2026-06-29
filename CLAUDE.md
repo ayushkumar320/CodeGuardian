@@ -16,11 +16,12 @@ own maintenance note).
 These are hard constraints. If a request conflicts with one, stop and flag it
 rather than silently breaking it.
 
-1. **Docs are the source of truth; the active build plan wins.** Do not invent
-   architecture. For implementation conflicts, `doc/build/` (phases 7–12) wins
-   for current work, the archived MVP docs explain delivered behavior, and both
-   override `doc/CodeGuardian-AI-Blueprint.md` when the blueprint describes a
-   larger deferred end state.
+1. **Code + IMPROVEMENT-PLAN are the source of truth.** Do not invent
+   architecture. The current code wins for delivered behavior; the
+   `doc/IMPROVEMENT-PLAN.md` queue defines what's next. Archived phase docs
+   under `doc/build/archive/` explain *why* the MVP is shaped as it is, and
+   both override `doc/CodeGuardian-AI-Blueprint.md` when the blueprint
+   describes a larger deferred end state.
 2. **Deterministic-first, always.** Static analysis / graph / scoring produce
    evidence; the LLM only synthesizes. A model must **never** create a finding
    with no analyzer evidence behind it.
@@ -61,38 +62,33 @@ but make every finding worth the developer's attention.
 
 ## Current state
 
-**The MVP (build phases 0–6) is implemented.** Application code lives under
-`src/codeguardian/` (Python + LangGraph + Pydantic — a committed stack choice that
-overrides the docs' TypeScript recommendation). It runs as a GitHub Action,
-zero-key deterministic, with a full test suite. The MVP build docs are archived
-under [doc/build/archive/](doc/build/archive/).
+All build phases (0–12) are delivered. Application code lives under
+`src/codeguardian/` (Python + LangGraph + Pydantic — a committed stack choice
+that overrides the docs' TypeScript recommendation). It runs as a GitHub Action,
+zero-key deterministic, with a full test suite. Forward work is now incremental
+upgrades, prioritized in [doc/IMPROVEMENT-PLAN.md](doc/IMPROVEMENT-PLAN.md).
 
-**Active work:** the **Production & Shipment plan (v1.0)**, phases 7–12, at
-[doc/build/README.md](doc/build/README.md). As of **June 27, 2026**, the repo is
-starting **Phase 7: Real-PR Validation & End-to-End Hardening**, followed by
-robustness, security, performance, release engineering, and beta/GA work through
-Phase 12. This stays GitHub-Actions-native — the hosted-SaaS end state remains
-out of scope (strict rule #8) until explicitly chosen. Always check
-[CURRENT-PHASE.md](CURRENT-PHASE.md) for what's next, and
-[CONTEXT-GRAPH.md](CONTEXT-GRAPH.md) for both doc routing and the code map.
-
-When asked to implement, follow the phased plan rather than inventing a new
-architecture. Confirm scope against the relevant phase doc first, and use
-[doc/Workflow-Improvements.md](doc/Workflow-Improvements.md) only as a refinement
-layer for report UX, command behavior, noise control, and prompt-safety details.
+Always check [CONTEXT-GRAPH.md](CONTEXT-GRAPH.md) for doc routing and the code
+map. When asked to implement, prefer a P0/P1 item from the improvement plan over
+inventing new scope.
 
 ## Where the plans live
 
-- [doc/CodeGuardian-AI-Blueprint.md](doc/CodeGuardian-AI-Blueprint.md) — full product + engineering blueprint (the long-term vision: knowledge graph, multi-agent AI, SaaS scaling, billing, security). Read for *why* and the eventual target.
-- [doc/Phase-Wise-Build-Plan.md](doc/Phase-Wise-Build-Plan.md) — the **MVP** plan (✅ delivered; historical reference for *why the MVP is shaped as it is*).
-- [doc/build/README.md](doc/build/README.md) — the **active** plan: Production & Shipment to v1.0 (phases 7–12). Read for *what to build now*. MVP phases 0–6 are archived in [doc/build/archive/](doc/build/archive/).
-- [doc/build/phase-7-real-pr-validation.md](doc/build/phase-7-real-pr-validation.md) through [doc/build/phase-12-beta-and-ga.md](doc/build/phase-12-beta-and-ga.md) — the current production-track source of truth for sequencing, deliverables, and acceptance criteria.
-- [doc/GitHub-PR-User-Flowmap.md](doc/GitHub-PR-User-Flowmap.md) — end-to-end PR UX flow.
-- [doc/Workflow-Improvements.md](doc/Workflow-Improvements.md) — refinement guidance for sticky comments, progressive disclosure, deterministic fallback UX, commands, suppressions, policy-file behavior, and prompt-injection handling. It supports the phase docs; it does not replace them.
+- [doc/IMPROVEMENT-PLAN.md](doc/IMPROVEMENT-PLAN.md) — **active** backlog
+  (P0/P1/P2 with file-level pointers; this is what to work on next).
+- [doc/POST-V1-ROADMAP.md](doc/POST-V1-ROADMAP.md) — what v1.0 is deliberately
+  *not* doing (hosted SaaS, full language parity, learned ML).
+- [doc/GA-CHECKLIST.md](doc/GA-CHECKLIST.md) — the v1.0 cut sequence.
+- [doc/CodeGuardian-AI-Blueprint.md](doc/CodeGuardian-AI-Blueprint.md) — the
+  original long-term vision (historical; read for *why* the product looks the
+  way it does).
+- [doc/GitHub-PR-User-Flowmap.md](doc/GitHub-PR-User-Flowmap.md) — end-to-end
+  PR UX flow.
+- [doc/build/archive/](doc/build/archive/) — the historical build-phase docs
+  (0–12, all delivered).
 
-If the blueprint and the build plan ever seem to conflict, **the build plan and
-phase docs win for the MVP** — the blueprint describes a larger end state that is
-deliberately deferred.
+If the blueprint and current code conflict, **the code (and IMPROVEMENT-PLAN)
+wins** — the blueprint describes a larger deferred end state.
 
 ## MVP architecture (the direction to build toward)
 

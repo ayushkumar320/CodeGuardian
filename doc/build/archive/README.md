@@ -1,21 +1,8 @@
-# CodeGuardian AI Build Phases — MVP (ARCHIVED, ✅ DELIVERED)
+# CodeGuardian Build Phases — ARCHIVED
 
-> **Status:** Phases 0–6 are **implemented, tested, and shipped** in the MVP.
-> These documents are kept as the historical build record. Active work has moved
-> to the production-hardening plan: see [../README.md](../README.md).
-
-This folder breaks the CodeGuardian AI MVP build plan into detailed phase documents. Each phase is designed to be actionable for a product manager, senior developer, and end user.
-
-The MVP direction is intentionally GitHub-native:
-
-- Runs through GitHub Actions.
-- Uses GitHub Checks as the PR merge-page surface.
-- Uses sticky PR comments for conversation.
-- Uses LangGraph for agentic workflow orchestration.
-- Uses Groq and Hugging Face free/open model routes.
-- Works in deterministic mode when no model credentials are configured.
-
-## Phase Documents
+> **Status:** All build phases are **delivered**. These documents are kept as the
+> historical build record. Forward planning has moved to
+> [doc/IMPROVEMENT-PLAN.md](../../IMPROVEMENT-PLAN.md).
 
 | Phase | Document | Outcome |
 | --- | --- | --- |
@@ -26,29 +13,15 @@ The MVP direction is intentionally GitHub-native:
 | 4 | [Phase 4: Advanced Analyzers](phase-4-advanced-analyzers.md) | Database, API, and architecture analysis |
 | 5 | [Phase 5: Memory And Historical Learning](phase-5-memory-and-history.md) | GitHub-native memory and historical context |
 | 6 | [Phase 6: Packaging And Adoption](phase-6-packaging-and-adoption.md) | Reusable Action, onboarding, and release |
+| 7 | [Phase 7: Real-PR Validation](phase-7-real-pr-validation.md) + [Runbook](phase-7-runbook.md) | Live-API hardening; public-PR validation green |
+| 8 | [Phase 8: Robustness & Observability](phase-8-robustness-observability.md) | Never-crash, retries, job summary, `--selfcheck` |
+| 9 | [Phase 9: Security & Supply-Chain Hardening](phase-9-security-hardening.md) | Egress secret scan, injection corpus, SHA-pinned actions |
+| 10 | [Phase 10: Performance & Scale](phase-10-performance-scale.md) | Shared import graph, batched diff, memory compaction |
+| 11 | [Phase 11: Release Engineering & Marketplace](phase-11-release-marketplace.md) | Reproducible packaging + automated release workflow |
+| 12 | [Phase 12: Beta, Tuning & v1.0 GA](phase-12-beta-and-ga.md) | Beta scaffolding, feedback templates, GA checklist |
 
-## Recommended Build Order
+Also archived here:
+[Phase-Wise-Build-Plan.md](Phase-Wise-Build-Plan.md) — the original MVP plan.
 
-```mermaid
-flowchart LR
-  P0["Phase 0<br/>Product Foundation"] --> P1["Phase 1<br/>PR Checker MVP"]
-  P1 --> P2["Phase 2<br/>LangGraph AI"]
-  P2 --> P3["Phase 3<br/>PR Conversation"]
-  P3 --> P4["Phase 4<br/>Advanced Analyzers"]
-  P4 --> P5["Phase 5<br/>Memory"]
-  P5 --> P6["Phase 6<br/>Packaging"]
-```
-
-## Definition Of Overall MVP Done
-
-- A repository can run CodeGuardian from GitHub Actions.
-- A PR receives a GitHub check called `CodeGuardian Risk`.
-- The check appears in the PR merge area.
-- The result includes risk score, risk level, findings, and recommended actions.
-- A sticky PR comment is updated without duplicates.
-- Developers can ask follow-up questions with `@codeguardian`.
-- LangGraph orchestrates the analysis workflow.
-- Groq and Hugging Face are supported model providers.
-- Deterministic fallback works without model keys.
-- Merge blocking works through GitHub required checks.
-
+For what's being worked on **now**, see
+[doc/IMPROVEMENT-PLAN.md](../../IMPROVEMENT-PLAN.md).

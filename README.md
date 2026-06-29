@@ -185,23 +185,15 @@ Out of scope:
 - [THREAT-MODEL.md](doc/THREAT-MODEL.md) — threats, mitigations, and residual risks
 - [TROUBLESHOOTING.md](doc/TROUBLESHOOTING.md) — common setup and runtime issues
 - [doc/GitHub-PR-User-Flowmap.md](doc/GitHub-PR-User-Flowmap.md) — merge-page product behavior
-- [doc/build/README.md](doc/build/README.md) — active production roadmap to v1.0
-- [doc/Workflow-Improvements.md](doc/Workflow-Improvements.md) — workflow and report refinements
-- [doc/CodeGuardian-AI-Blueprint.md](doc/CodeGuardian-AI-Blueprint.md) — deferred long-term blueprint, not the current product surface
+- [doc/IMPROVEMENT-PLAN.md](doc/IMPROVEMENT-PLAN.md) — active P0/P1/P2 backlog
+- [doc/POST-V1-ROADMAP.md](doc/POST-V1-ROADMAP.md) — what v1.0 is deliberately *not* doing
+- [doc/GA-CHECKLIST.md](doc/GA-CHECKLIST.md) — v1.0 cut sequence
+- [doc/CodeGuardian-AI-Blueprint.md](doc/CodeGuardian-AI-Blueprint.md) — original long-term blueprint (historical)
+- [doc/build/archive/](doc/build/archive/) — historical phase build docs (0–12, delivered)
 
 ## Current Status
 
-Working toward a trusted **v1.0** GitHub Action focused on the PR merge page.
-
-- **MVP (phases 0–6): delivered** — deterministic PR analysis, LangGraph agents,
-  `/codeguardian` loop, GitHub-native memory.
-- **Robustness & observability (phase 8): done** — never-crash boundary, retries
-  with timeouts, secret-safe logging, job summary, `--selfcheck`.
-- **Security & supply-chain (phase 9): done** — egress secret-scan, prompt-injection
-  corpus, fork-PR safety, SHA-pinned actions, CodeQL, Dependabot. See
-  [SECURITY.md](SECURITY.md).
-- **In flight:** live real-PR validation on a sandbox repo (phase 7), then
-  performance, release engineering, and beta to v1.0.
-
-See [CURRENT-PHASE.md](CURRENT-PHASE.md) for the live status and
-[doc/build/README.md](doc/build/README.md) for the full roadmap.
+All build phases (0–12) are delivered. Forward work is prioritized in
+[doc/IMPROVEMENT-PLAN.md](doc/IMPROVEMENT-PLAN.md); the v1.0 GA sequence
+(beta runs, the tag push, Marketplace publish) is in
+[doc/GA-CHECKLIST.md](doc/GA-CHECKLIST.md).

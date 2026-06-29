@@ -153,7 +153,7 @@ python e2e/validate_sandbox.py send-command --repo owner/sandbox --pr 1 \
 There is also a `Phase 7 Sandbox Validate` workflow
 (`.github/workflows/phase7-sandbox-validate.yml`) you can trigger via
 **workflow_dispatch** to run these checks from CI. See [e2e/README.md](../e2e/README.md)
-and [doc/build/phase-7-runbook.md](build/phase-7-runbook.md).
+and [doc/build/archive/phase-7-runbook.md](build/archive/phase-7-runbook.md).
 
 ---
 

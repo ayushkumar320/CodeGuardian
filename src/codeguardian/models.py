@@ -1,8 +1,9 @@
 """Data contracts for CodeGuardian.
 
-Python (Pydantic) re-expression of the Phase 0 TypeScript contracts in
-doc/build/phase-0-product-contract.md (B4 data contracts, B5 LangGraph state).
-Every Finding must carry non-empty evidence: no evidence -> no finding.
+Pydantic models for everything that crosses an interface (LangGraph state,
+GitHub API payloads, the JSON artifact). Every Finding must carry non-empty
+evidence: no evidence -> no finding. See
+doc/build/archive/phase-0-product-contract.md for the original spec.
 """
 
 from __future__ import annotations
