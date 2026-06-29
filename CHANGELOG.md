@@ -6,6 +6,17 @@ All notable changes to CodeGuardian AI. Format based on
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-30
+
+First tagged release. The MVP (Phases 0–6) was finished as `0.1.0` but never
+published; `0.2.0` is the initial real Marketplace-eligible cut and bundles all
+Production-track work since: live-API hardening from the public-PR validation
+(Phase 7), never-crash + observability (Phase 8), security & supply-chain
+hardening (Phase 9), the performance pass (Phase 10), reproducible packaging +
+automated releases (Phase 11), and the beta/feedback scaffolding for v1.0
+(Phase 12). Consumer pins: `@v0.2.0` (exact) or `@v0` (moves with non-breaking
+updates).
+
 ### Added
 - **Partial Python support** (Phase 12, in-scope expansion):
   - `pr/classify.py` routes `.py` to `backend` and recognizes `test_*.py` /
@@ -21,19 +32,6 @@ All notable changes to CodeGuardian AI. Format based on
     since they sit on the import graph.
   - Out of scope for now (kept JS/TS-only): types-breaking-change, API contract,
     Prisma/ORM migration risk. Tracked in `doc/POST-V1-ROADMAP.md`.
-
-## [0.2.0] - 2026-06-30
-
-First tagged release. The MVP (Phases 0–6) was finished as `0.1.0` but never
-published; `0.2.0` is the initial real Marketplace-eligible cut and bundles all
-Production-track work since: live-API hardening from the public-PR validation
-(Phase 7), never-crash + observability (Phase 8), security & supply-chain
-hardening (Phase 9), the performance pass (Phase 10), reproducible packaging +
-automated releases (Phase 11), and the beta/feedback scaffolding for v1.0
-(Phase 12). Consumer pins: `@v0.2.0` (exact) or `@v0` (moves with non-breaking
-updates).
-
-### Added
 - **Beta scaffolding for v1.0** (Phase 12):
   - Issue templates for [false-positive](.github/ISSUE_TEMPLATE/false-positive.yml),
     [false-negative](.github/ISSUE_TEMPLATE/false-negative.yml), and
