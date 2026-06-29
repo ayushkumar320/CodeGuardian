@@ -34,6 +34,11 @@ def plan(command: Command, reports: list[Report], author_association: str | None
     if name in (CommandName.help, CommandName.unknown):
         return Outcome(reply=handlers.HELP_TEXT)
 
+    if name == CommandName.ask:
+        if latest is None:
+            return Outcome(reply=handlers.NO_REPORT)
+        return Outcome(reply=handlers.ask(latest, command.question or ""))
+
     if name == CommandName.recheck:
         if not permissions.can_recheck(author_association):
             return Outcome(reply="Only maintainers can run `/codeguardian recheck`.")

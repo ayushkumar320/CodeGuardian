@@ -7,6 +7,15 @@ All notable changes to CodeGuardian AI. Format based on
 ## [Unreleased]
 
 ### Added
+- **Free-form Q&A: `/codeguardian <plain English question>`.** Anything after the
+  trigger that isn't a fixed command is now answered by the LLM as a short prose
+  reply, grounded in the structured analyzer findings. Strict rule #2 stays in
+  force: the question is wrapped as untrusted input, the LLM cannot create
+  findings or change the score, and a malformed response is rejected. With no
+  model provider configured, falls back to an honest message pointing at
+  `/codeguardian explain` (no longer dumps the help menu on unknown input).
+  Replaces the previous "ambiguous → help" UX, which was confusing per beta
+  feedback.
 - **Language-agnostic baseline** so CodeGuardian is useful on *any* repo, not
   only JS/TS/Python (still keeping strict rule #2 — no fabricated findings):
   - New `languages` module with a public **support matrix** declaring which

@@ -48,8 +48,17 @@ def test_parse_no_mention():
     assert parse("just a normal comment") is None
 
 
-def test_parse_unknown():
-    assert parse("@codeguardian dance").name == CommandName.unknown
+def test_parse_unknown_falls_through_to_ask():
+    # Anything that mentions us but isn't a known command becomes a free-form
+    # question for the LLM (capped, evidence-only). Bare mention -> help.
+    c = parse("@codeguardian what is the major change here?")
+    assert c.name == CommandName.ask
+    assert c.question == "what is the major change here?"
+
+
+def test_parse_bare_mention_is_help():
+    assert parse("@codeguardian").name == CommandName.help
+    assert parse("@codeguardian   ").name == CommandName.help
 
 
 def test_parse_ignore_with_reason():

@@ -10,10 +10,12 @@ from __future__ import annotations
 from typing import Optional
 
 from ..models import Report
+from ..providers import answer_question
 from ..report import merge_status
 
 HELP_TEXT = (
     "**CodeGuardian** predicts what this PR can break before merge.\n"
+    "- `/codeguardian <your question>` — ask anything in plain English\n"
     "- `/codeguardian explain` — why this risk score\n"
     "- `/codeguardian tests` — tests to run before merge\n"
     "- `/codeguardian why blocked` — the finding blocking merge + the fix\n"
@@ -118,6 +120,19 @@ def history(report: Report) -> str:
     lines = ["**Has this happened before?**"]
     lines += [f"- {c}" for c in report.historical_context]
     return "\n".join(lines)
+
+
+def ask(report: Report, question: str) -> str:
+    """Free-form Q&A. The LLM may only describe what analyzers already found
+    (strict rule #2). When no provider is configured, falls back to a useful
+    deterministic message pointing at structured commands.
+    """
+    if not question.strip():
+        return "What would you like to know? Try `/codeguardian explain` for the standard summary."
+    result = answer_question(report, question)
+    # The result text already has the deterministic fallback when no key is
+    # configured, so we just return it as-is.
+    return result.text
 
 
 def compare(current: Report, previous: Optional[Report]) -> str:

@@ -37,7 +37,8 @@ class CommandName(str, Enum):
     summary = "summary"
     history = "history"
     ignore = "ignore"
-    unknown = "unknown"
+    ask = "ask"        # free-form question answered by the LLM, evidence-only
+    unknown = "unknown"  # bare `/codeguardian` with nothing after
 
 
 _CATEGORY_ALIASES = {
@@ -55,6 +56,7 @@ class Command:
     finding_id: Optional[str] = None
     reason: Optional[str] = None
     category: Optional[str] = None  # for `explain <category> risk`
+    question: Optional[str] = None  # free-form text for `ask`
     raw: str = ""
 
     @property
@@ -67,7 +69,11 @@ class Command:
             CommandName.compare,
             CommandName.summary,
             CommandName.history,
+            CommandName.ask,
         }
+
+
+_MAX_QUESTION_CHARS = 1500  # bound prompt-injection volume on free-form input.
 
 
 def parse(body: str) -> Optional[Command]:
@@ -75,6 +81,9 @@ def parse(body: str) -> Optional[Command]:
         return None
     # Take the text after the first @codeguardian mention.
     after = _MENTION_RE.split(body, maxsplit=1)[1].strip()
+    # Bare `/codeguardian` (nothing after) -> help. Anything else flows through.
+    if not after:
+        return Command(CommandName.help, raw="")
     low = after.lower()
 
     if low.startswith("why blocked") or low.startswith("why_blocked") or low.startswith("why-blocked"):
@@ -107,4 +116,8 @@ def parse(body: str) -> Optional[Command]:
     }
     if first in simple:
         return Command(simple[first], raw=after)
-    return Command(CommandName.unknown, raw=after)
+    # Free-form question — anything that mentioned us but isn't a known command.
+    # Capped to defend against prompt-injection-by-volume; the LLM call also
+    # wraps the question as untrusted input.
+    question = after[:_MAX_QUESTION_CHARS]
+    return Command(CommandName.ask, question=question, raw=after)
