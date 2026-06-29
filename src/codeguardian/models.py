@@ -100,6 +100,18 @@ class DiffFile(BaseModel):
     category: FileCategory = FileCategory.other
 
 
+class DiffSummaryFile(BaseModel):
+    """Compact per-file diff record persisted on the Report so /codeguardian
+    free-form Q&A can reason about *what actually changed*, not just abstract
+    finding categories. Patch is excerpted to keep the artifact small.
+    """
+    path: str
+    status: FileStatus
+    additions: int = 0
+    deletions: int = 0
+    patch_excerpt: Optional[str] = None  # first ~80 hunk lines, already redacted
+
+
 class Blocking(BaseModel):
     guarded: bool = False
     strict: bool = False
@@ -152,6 +164,7 @@ class Report(BaseModel):
     historical_context: list[str] = Field(default_factory=list)
     errors: list[str] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)  # operational notes (e.g. diff truncated)
+    diff_summary: list[DiffSummaryFile] = Field(default_factory=list)
     dedupe_key: str = ""
     deterministic_notice: Optional[str] = None
     degraded: bool = False

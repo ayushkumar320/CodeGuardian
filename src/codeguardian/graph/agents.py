@@ -26,7 +26,8 @@ from ..analyzers import tests as tests_analyzer
 from ..analyzers import types as types_analyzer
 from ..memory.record import Signature
 from ..memory.retrieve import context_lines, find_similar
-from ..models import Finding, Provider, Report, Suppression
+from ..models import DiffSummaryFile, Finding, Provider, Report, Suppression
+from ..security import safe_output
 from ..pr.classify import is_docs_only
 from ..providers import summarize
 from ..scoring import score
@@ -137,6 +138,7 @@ def risk_scoring_agent(state: CodeGuardianState) -> dict:
     reviewers = _reviewers(findings, policy)
 
     pr = state["pr"]
+    diff_summary = _build_diff_summary(state.get("diff", []))
     report = Report(
         pr=pr,
         mode=policy.mode,
@@ -148,10 +150,35 @@ def risk_scoring_agent(state: CodeGuardianState) -> dict:
         reviewers=reviewers,
         errors=state.get("errors", []),
         notes=state.get("notes", []),
+        diff_summary=diff_summary,
         degraded=bool(state.get("errors", [])),
         dedupe_key=f"{pr.owner}/{pr.repo}#{pr.number}@{pr.head_sha}:{ANALYZER_VERSION}",
     )
     return {"report": report}
+
+
+# Per-file patch excerpt cap. Big enough to convey *what* changed (a function
+# rename, added file, removed branch fits well below this), small enough to keep
+# the artifact + ask-mode prompt bounded.
+_MAX_PATCH_EXCERPT = 1600
+
+
+def _build_diff_summary(diff) -> list[DiffSummaryFile]:
+    out: list[DiffSummaryFile] = []
+    for f in diff or []:
+        excerpt = None
+        if f.patch:
+            text = f.patch
+            if len(text) > _MAX_PATCH_EXCERPT:
+                text = text[:_MAX_PATCH_EXCERPT] + "\n…(truncated)"
+            # Secret-redact (defense in depth — patches can contain anything).
+            excerpt = safe_output(text)
+        out.append(DiffSummaryFile(
+            path=f.path, status=f.status,
+            additions=f.additions, deletions=f.deletions,
+            patch_excerpt=excerpt,
+        ))
+    return out
 
 
 def _reviewers(findings: list[Finding], policy) -> list[str]:

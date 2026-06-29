@@ -9,13 +9,18 @@ All notable changes to CodeGuardian AI. Format based on
 ### Added
 - **Free-form Q&A: `/codeguardian <plain English question>`.** Anything after the
   trigger that isn't a fixed command is now answered by the LLM as a short prose
-  reply, grounded in the structured analyzer findings. Strict rule #2 stays in
-  force: the question is wrapped as untrusted input, the LLM cannot create
-  findings or change the score, and a malformed response is rejected. With no
-  model provider configured, falls back to an honest message pointing at
-  `/codeguardian explain` (no longer dumps the help menu on unknown input).
-  Replaces the previous "ambiguous → help" UX, which was confusing per beta
-  feedback.
+  reply, grounded in the structured analyzer findings *and the actual diff*
+  (changed file paths, statuses, line counts, secret-redacted patch excerpts).
+  This lets the model answer concretely — "you split board.py out into
+  pkg/board.py and 2 modules now import it" — instead of vaguely restating
+  finding categories. Strict rule #2 stays in force: the question is wrapped as
+  untrusted input, the LLM cannot create findings or change the score, and a
+  malformed response is rejected. With no model provider configured, falls back
+  to an honest message pointing at `/codeguardian explain`.
+- `Report.diff_summary` persists a compact per-file diff record (path, status,
+  +/- counts, bounded patch excerpt) on the artifact so ask-mode has real
+  material to reason over. Excerpt cap: 1600 chars per file; total prompt cap:
+  12000 chars (largest-change files first).
 - **Language-agnostic baseline** so CodeGuardian is useful on *any* repo, not
   only JS/TS/Python (still keeping strict rule #2 — no fabricated findings):
   - New `languages` module with a public **support matrix** declaring which

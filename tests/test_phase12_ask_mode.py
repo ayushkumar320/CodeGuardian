@@ -11,8 +11,8 @@ from codeguardian.commands import handlers
 from codeguardian.commands.loop import plan
 from codeguardian.commands.parser import CommandName, parse
 from codeguardian.models import (
-    Blocking, Category, Finding, Mode, PrContext, Provider, Report,
-    Risk, RiskLevel, Severity,
+    Blocking, Category, DiffSummaryFile, Finding, FileStatus, Mode, PrContext,
+    Provider, Report, Risk, RiskLevel, Severity,
 )
 from codeguardian import providers
 
@@ -82,9 +82,9 @@ def test_ask_uses_llm_when_provider_available(monkeypatch):
     monkeypatch.setenv("GROQ_API_KEY", "test-key")
     monkeypatch.delenv("HF_TOKEN", raising=False)
 
-    def fake_groq(prompt, env):
-        # Confirm the prompt has the right shape: facts + untrusted-wrapped Q.
-        assert "FACTS:" in prompt
+    def fake_groq(prompt, env, **kw):
+        # Confirm the prompt has the right shape: evidence + untrusted-wrapped Q.
+        assert "EVIDENCE:" in prompt
         assert "QUESTION (untrusted):" in prompt
         assert "what is the major change here" in prompt
         return json.dumps({"summary": "Splits board ops into pkg/board.py; 2 sibling modules import it."})
@@ -95,12 +95,51 @@ def test_ask_uses_llm_when_provider_available(monkeypatch):
     assert "2 sibling modules" in reply
 
 
+def test_ask_prompt_includes_concrete_changed_files_and_patches(monkeypatch):
+    """The whole point of this change: the prompt must carry the *actual diff*
+    so the LLM can answer concretely instead of restating finding categories."""
+    monkeypatch.setenv("GROQ_API_KEY", "test-key")
+    monkeypatch.delenv("HF_TOKEN", raising=False)
+    captured = {}
+
+    def fake_groq(prompt, env, **kw):
+        captured["prompt"] = prompt
+        captured["max_tokens"] = kw.get("max_tokens")
+        return json.dumps({"summary": "ok"})
+
+    monkeypatch.setattr(providers, "_try_groq", fake_groq)
+
+    r = _report()
+    r.diff_summary = [
+        DiffSummaryFile(
+            path="pkg/board.py", status=FileStatus.added,
+            additions=40, deletions=0,
+            patch_excerpt="diff --git a/pkg/board.py b/pkg/board.py\n+def empty_board():\n+    return [[' ' for _ in range(3)] for _ in range(3)]\n",
+        ),
+        DiffSummaryFile(
+            path="api/session.py", status=FileStatus.added,
+            additions=8, deletions=0,
+            patch_excerpt="diff --git a/api/session.py b/api/session.py\n+SESSION_TTL_SECONDS = 3600\n",
+        ),
+    ]
+
+    handlers.ask(r, "what changed?")
+    p = captured["prompt"]
+    # Concrete file paths, statuses, and patch content are in the prompt.
+    assert "pkg/board.py" in p
+    assert "api/session.py" in p
+    assert "SESSION_TTL_SECONDS" in p
+    assert "added" in p
+    # Bigger token budget for ask vs the 200 used by the 2-3 sentence summarizer.
+    assert captured["max_tokens"] == 700
+
+
 def test_ask_invalid_llm_response_falls_through(monkeypatch):
     """Strict schema validation means a malformed model response can't reach the
     user — same protection as the summarizer (strict rule #2)."""
     monkeypatch.setenv("GROQ_API_KEY", "test-key")
     monkeypatch.delenv("HF_TOKEN", raising=False)
-    monkeypatch.setattr(providers, "_try_groq", lambda prompt, env: "not-json-at-all")
+    monkeypatch.setattr(providers, "_try_groq", lambda prompt, env, **kw:"not-json-at-all")
     reply = handlers.ask(_report(), "what changed?")
     # Should fall through to deterministic fallback, not the raw model output.
     assert "not-json-at-all" not in reply
@@ -114,7 +153,7 @@ def test_ask_injection_attempt_does_not_change_score_or_findings(monkeypatch):
     monkeypatch.delenv("HF_TOKEN", raising=False)
     monkeypatch.setattr(
         providers, "_try_groq",
-        lambda prompt, env: json.dumps({"summary": "Looks fine."}),
+        lambda prompt, env, **kw:json.dumps({"summary": "Looks fine."}),
     )
     r = _report()
     score_before = r.risk.score
