@@ -151,6 +151,59 @@ an unrelated GitHub user."* Don't break, just nudge.
 
 ---
 
+### P0-6 · One-command installer (`gh codeguardian init`)
+
+**Current state.** Onboarding requires the user to:
+1. Open [`examples/`](../examples/), pick a workflow, copy it to
+   `.github/workflows/codeguardian.yml`.
+2. Optionally set `GROQ_API_KEY` / `HF_TOKEN` via the GitHub UI or `gh secret set`.
+3. Commit + push.
+
+Three manual steps, each a friction point. The example workflows already exist
+and document the right shape — but the user has to know about them.
+
+**Why it matters.** "Add a YAML file to .github/workflows/" is the single
+biggest drop-off in adoption. A one-command installer reduces the entire setup
+to ~10 seconds and lets us preselect the right workflow per repo language
+(JS/TS / Python / monorepo).
+
+**Proposal.** Ship a `gh` CLI extension at a separate repo
+`ayushkumar320/gh-codeguardian`:
+
+```bash
+gh extension install ayushkumar320/gh-codeguardian
+gh codeguardian init
+```
+
+What it does:
+
+1. Verifies we're in a git repo with a GitHub remote.
+2. Detects language (presence of `package.json` / `pyproject.toml` / `go.mod`)
+   and picks the matching workflow from this repo's `examples/`.
+3. Writes `.github/workflows/codeguardian.yml`, pinned to `@v0`.
+4. Prompts to optionally set `GROQ_API_KEY` via `gh secret set`.
+5. Prints next steps: commit, push, open a PR, try `/codeguardian explain`.
+
+**Why a `gh` extension and not npm/PyPI:**
+- Our audience (GitHub-PR workflow) almost always has `gh` installed already;
+  no separate runtime requirement.
+- `gh` extensions can set repo secrets natively (no separate auth flow).
+- Zero new release pipeline — `gh` extensions are just git repos that tag
+  releases; no PyPI OIDC, no npm publish, no separate maintainer accounts.
+- Trade-off: lower discoverability than npm/PyPI registries. Acceptable
+  for v1.0; we can add an `npx codeguardian-init` wrapper later if real
+  demand surfaces (the extension's `init` logic is the same).
+
+**Effort.** ~half a day total: ~100 lines of Bash for the extension script,
+a small README on the extension repo, a smoke test that wires through
+`gh codeguardian init --dry-run` on a fresh tempdir, and a one-line install
+note in our own README.
+
+**Risk.** Low. The extension only writes one file and (with consent) one
+secret. No runtime change to the Action itself.
+
+---
+
 ## P1 — Meaningful work, ≤ 1 day each, post-v1.0
 
 ### P1-1 · Conversation memory across asks within one PR
