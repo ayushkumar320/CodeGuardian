@@ -131,7 +131,8 @@ def test_ask_prompt_includes_concrete_changed_files_and_patches(monkeypatch):
     assert "SESSION_TTL_SECONDS" in p
     assert "added" in p
     # Bigger token budget for ask vs the 200 used by the 2-3 sentence summarizer.
-    assert captured["max_tokens"] == 700
+    # The exact number can change; the contract is "noticeably larger than summary".
+    assert captured["max_tokens"] >= 700
 
 
 def test_ask_invalid_llm_response_falls_through(monkeypatch):

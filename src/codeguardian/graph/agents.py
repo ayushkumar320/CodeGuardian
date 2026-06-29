@@ -160,7 +160,7 @@ def risk_scoring_agent(state: CodeGuardianState) -> dict:
 # Per-file patch excerpt cap. Big enough to convey *what* changed (a function
 # rename, added file, removed branch fits well below this), small enough to keep
 # the artifact + ask-mode prompt bounded.
-_MAX_PATCH_EXCERPT = 1600
+_MAX_PATCH_EXCERPT = 2400
 
 
 def _build_diff_summary(diff) -> list[DiffSummaryFile]:
