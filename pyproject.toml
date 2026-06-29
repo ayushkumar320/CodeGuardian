@@ -1,6 +1,6 @@
 [project]
 name = "codeguardian"
-version = "0.1.0"
+version = "0.2.0"
 description = "CodeGuardian AI — know what breaks before you merge. GitHub-native pre-merge risk checker."
 readme = "README.md"
 requires-python = ">=3.11"
