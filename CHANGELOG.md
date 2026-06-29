@@ -6,6 +6,22 @@ All notable changes to CodeGuardian AI. Format based on
 
 ## [Unreleased]
 
+### Added
+- **Partial Python support** (Phase 12, in-scope expansion):
+  - `pr/classify.py` routes `.py` to `backend` and recognizes `test_*.py` /
+    `*_test.py` test files.
+  - `analyzers/imports.py` parses `import x.y` and `from .pkg import z`,
+    resolves relative imports against the importer's package and absolute
+    imports against repo root + `src/` layouts; the import graph now spans
+    JS/TS *and* Python in a single pass.
+  - `analyzers/tests.py` suggests `test_*.py` / `*_test.py` / `tests/test_*.py`
+    candidates for missing coverage, and detects test-impact via the Python
+    import graph the same way it did for JS/TS.
+  - Architecture findings (layer direction, circular deps) come along for free
+    since they sit on the import graph.
+  - Out of scope for now (kept JS/TS-only): types-breaking-change, API contract,
+    Prisma/ORM migration risk. Tracked in `doc/POST-V1-ROADMAP.md`.
+
 ## [0.2.0] - 2026-06-30
 
 First tagged release. The MVP (Phases 0–6) was finished as `0.1.0` but never

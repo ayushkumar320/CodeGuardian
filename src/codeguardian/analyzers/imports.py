@@ -1,8 +1,12 @@
-"""Lightweight JS/TS dependency / blast-radius analysis.
+"""Lightweight dependency / blast-radius analysis.
 
 Builds a reverse-import map across the repo so we can estimate which files
 depend on a changed module. Produces deterministic ``dependency`` findings with
 the impacted files as evidence. Also flags high-risk path edits.
+
+Supports JS/TS (the primary target) and Python (Phase 12 add). Each language gets
+its own regex pair (extract + resolve); the rest of the pipeline is language-
+agnostic.
 """
 
 from __future__ import annotations
@@ -22,11 +26,29 @@ from ..models import (
 from ..pr.classify import matches_any
 from ..walk import DEFAULT_MAX_FILES, DEFAULT_MAX_FILE_BYTES, iter_repo_files
 
+# --- JS / TS ------------------------------------------------------------------
 _IMPORT_RE = re.compile(
     r"""(?:import\s[^'"]*?from\s*|import\s*|require\(\s*|export\s[^'"]*?from\s*)['"]([^'"]+)['"]"""
 )
-_CODE_EXT = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs")
+_TS_EXT = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs")
 _RESOLVE_EXT = ["", ".ts", ".tsx", ".js", ".jsx", "/index.ts", "/index.tsx", "/index.js"]
+
+# --- Python -------------------------------------------------------------------
+_PY_EXT = (".py",)
+# `from .util import foo`, `from ..pkg.mod import x`, `from pkg.mod import x`,
+# also `from . import util`.
+_PY_FROM_RE = re.compile(
+    r"^\s*from\s+(?P<dots>\.+)?(?P<mod>[A-Za-z_][\w.]*)?\s+import\s+",
+    re.MULTILINE,
+)
+# `import pkg.mod`, `import pkg.mod as alias` — bare/absolute only; `import .x` is
+# not legal Python without `from`, so we don't try to match it.
+_PY_IMPORT_RE = re.compile(
+    r"^\s*import\s+(?P<mod>[A-Za-z_][\w.]*)(?:\s+as\s+\w+)?\s*$",
+    re.MULTILINE,
+)
+
+_CODE_EXT = _TS_EXT + _PY_EXT
 
 
 def _iter_code_files(
@@ -39,7 +61,7 @@ def _iter_code_files(
     )
 
 
-def _resolve(importer: str, spec: str, all_files: set[str]) -> str | None:
+def _resolve_ts(importer: str, spec: str, all_files: set[str]) -> str | None:
     if not spec.startswith("."):
         return None  # package import, not a local file
     base = os.path.normpath(os.path.join(os.path.dirname(importer), spec))
@@ -47,6 +69,66 @@ def _resolve(importer: str, spec: str, all_files: set[str]) -> str | None:
         cand = (base + ext).replace(os.sep, "/")
         if cand in all_files:
             return cand
+    return None
+
+
+# Kept under the old name so existing tests/imports keep working.
+_resolve = _resolve_ts
+
+
+def _extract_py_imports(text: str) -> list[tuple[int, str]]:
+    """Return [(leading_dots, dotted_module_or_empty), ...] for a Python file.
+
+    ``dots`` is 0 for absolute imports (``from pkg.x import y`` / ``import pkg.x``)
+    and 1+ for relative imports. ``module`` may be empty for ``from . import x``
+    (we still emit the entry so the caller can resolve to the package dir).
+    """
+    out: list[tuple[int, str]] = []
+    for m in _PY_FROM_RE.finditer(text):
+        dots = len(m.group("dots") or "")
+        mod = m.group("mod") or ""
+        if dots == 0 and not mod:
+            continue
+        out.append((dots, mod))
+    for m in _PY_IMPORT_RE.finditer(text):
+        out.append((0, m.group("mod")))
+    return out
+
+
+def _resolve_py(
+    importer: str, dots: int, module: str, all_files: set[str]
+) -> str | None:
+    """Resolve a Python import to a repo-relative file path, or None.
+
+    Conservatively handles:
+    - relative imports (``dots >= 1``) anchored on the importer's directory;
+    - absolute imports tried first at repo root, then under a top-level ``src/``
+      (common 'src layout').
+    Returns the first ``pkg/mod.py`` or ``pkg/mod/__init__.py`` that exists.
+    Multiple plausible matches → returns the first; ambiguous absolute imports
+    that don't match are simply skipped (preferred over wrong attribution).
+    """
+    parts = module.split(".") if module else []
+
+    if dots >= 1:
+        # Walk up `dots - 1` directories from the importer's directory.
+        here = importer.split("/")[:-1]
+        up = dots - 1
+        if up > len(here):
+            return None
+        base_dir = here[: len(here) - up]
+        candidate_dir = base_dir + parts
+    else:
+        # Absolute import: try repo-root layout first, then src/ layout.
+        candidate_dir = parts
+
+    base = "/".join(candidate_dir)
+    candidates = [f"{base}.py" if base else "", f"{base}/__init__.py" if base else ""]
+    if dots == 0:
+        candidates += [f"src/{base}.py", f"src/{base}/__init__.py"]
+    for c in candidates:
+        if c and c in all_files:
+            return c
     return None
 
 
@@ -85,11 +167,20 @@ def build_import_graph(
         except OSError:
             continue
         importer = f.replace(os.sep, "/")
-        for spec in _IMPORT_RE.findall(text):
-            target = _resolve(importer, spec, fileset)
-            if target:
-                forward[importer].add(target)
-                reverse[target].add(importer)
+        targets: list[str] = []
+        if importer.endswith(_PY_EXT):
+            for dots, mod in _extract_py_imports(text):
+                t = _resolve_py(importer, dots, mod, fileset)
+                if t:
+                    targets.append(t)
+        else:  # JS/TS family
+            for spec in _IMPORT_RE.findall(text):
+                t = _resolve_ts(importer, spec, fileset)
+                if t:
+                    targets.append(t)
+        for t in targets:
+            forward[importer].add(t)
+            reverse[t].add(importer)
     return ImportGraph(forward=forward, reverse=reverse)
 
 

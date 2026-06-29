@@ -24,22 +24,34 @@ from ..globs import glob_match
 from ..policy import TestSuite
 from .imports import ImportGraph, build_import_graph
 
-_CODE_EXT = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs")
+_CODE_EXT = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".py")
 _TEST_MARKERS = (".test.", ".spec.", "__tests__/", "/tests/", "/test/")
 
 
 def _is_test_path(path: str) -> bool:
     p = path.lower()
-    return any(m in p for m in _TEST_MARKERS)
+    if any(m in p for m in _TEST_MARKERS):
+        return True
+    name = p.rsplit("/", 1)[-1]
+    # Python conventions: test_*.py and *_test.py.
+    if name.endswith(".py") and (name.startswith("test_") or name.endswith("_test.py")):
+        return True
+    return False
 
 
 def _candidate_tests(path: str) -> list[str]:
     d, name = os.path.split(path)
     stem, ext = os.path.splitext(name)
     out = []
-    for suffix in (".test", ".spec"):
-        out.append(os.path.join(d, f"{stem}{suffix}{ext}").replace(os.sep, "/"))
-        out.append(os.path.join(d, "__tests__", f"{stem}{suffix}{ext}").replace(os.sep, "/"))
+    if ext == ".py":
+        # PEP 8 / pytest conventions.
+        out.append(os.path.join(d, f"test_{stem}.py").replace(os.sep, "/"))
+        out.append(os.path.join(d, f"{stem}_test.py").replace(os.sep, "/"))
+        out.append(os.path.join(d, "tests", f"test_{stem}.py").replace(os.sep, "/"))
+    else:
+        for suffix in (".test", ".spec"):
+            out.append(os.path.join(d, f"{stem}{suffix}{ext}").replace(os.sep, "/"))
+            out.append(os.path.join(d, "__tests__", f"{stem}{suffix}{ext}").replace(os.sep, "/"))
     return out
 
 

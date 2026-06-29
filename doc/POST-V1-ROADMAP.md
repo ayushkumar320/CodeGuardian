@@ -24,9 +24,12 @@ the notes are the starting point.
   keep the zero-key, in-Action default working unchanged.
 
 ### More language support
-- *Not in v1.0.* Analyzers are tuned for JS/TS/Node/React/Next.
-- Post-v1.0 path: start with Python (analyzers/imports.py already walks `.py`),
-  then Go. Schema diff + API contract analyzers will need per-language pieces.
+- *Partial in v1.0.* JS/TS is the primary target; **Python has dependency +
+  tests + architecture support** (Phase 12 add). Types, API contract, and
+  ORM/migration analyzers are still JS/TS-only.
+- Post-v1.0 path: finish Python parity (typing-breaking-change detection;
+  SQLAlchemy/Django ORM migration risk; FastAPI/Flask/Django route analyzer),
+  then Go. Schema diff and API contract analyzers need per-language pieces.
 
 ### Richer API / schema contract analyzers
 - *Not in v1.0.* The current API analyzer is heuristic.
@@ -43,7 +46,8 @@ the notes are the starting point.
 
 ## Roadmap candidates, ranked by likely impact
 
-1. Python analyzer parity (imports + tests, then types).
+1. Python analyzer parity — finish typing-breaking-change + ORM/migration risk +
+   web-framework routes (dependency + tests already in v1.0).
 2. OpenAPI / GraphQL schema-diff analyzer.
 3. PR-level cost/time observability (artifact JSON already has timings).
 4. Optional hosted backend (only if real demand surfaces).

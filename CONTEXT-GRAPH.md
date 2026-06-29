@@ -134,6 +134,7 @@ Python package at `src/codeguardian/`. Stack: Python + LangGraph + Pydantic.
 | Policy loader + defaults (modes, thresholds, noise, architecture rules) | `src/codeguardian/policy.py` |
 | PR diff from git / file classification | `src/codeguardian/pr/diff.py`, `pr/classify.py` |
 | Deterministic analyzers (import blast radius, missing tests) | `src/codeguardian/analyzers/imports.py`, `analyzers/tests.py` |
+| Python language support (dependency + tests + arch) | `src/codeguardian/analyzers/imports.py` (`_extract_py_imports`, `_resolve_py`) ; `analyzers/tests.py` (`_candidate_tests` Python branch) ; `pr/classify.py` (Python test/backend rules) |
 | Deterministic analyzers (API contract, DB/migration, architecture) | `src/codeguardian/analyzers/api.py`, `analyzers/database.py`, `analyzers/architecture.py` |
 | Risk scoring (confidence-weighted aggregate) | `src/codeguardian/scoring.py` |
 | Provider router Groq→HF→deterministic + output schema validation | `src/codeguardian/providers.py` (`validate_summary`) |

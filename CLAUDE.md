@@ -130,11 +130,15 @@ always-on hosted SaaS required.
 
 ## MVP scope guardrails
 
-In scope (Phase 0–6): GitHub App/Action install, PR analysis on every update,
-risk check + sticky comment, JS/TS/Node/React/Next support, import/dependency
-graph, heuristic test recommendations, basic architecture rules (forbidden
-imports, layer direction, circular deps), basic Prisma migration risk,
-`@codeguardian` conversation loop, GitHub-native memory (workflow artifacts).
+In scope (Phase 0–6, plus the Phase-12 Python add): GitHub App/Action install, PR
+analysis on every update, risk check + sticky comment, JS/TS/Node/React/Next
+support, **Python dependency + tests support**, import/dependency graph,
+heuristic test recommendations, basic architecture rules (forbidden imports,
+layer direction, circular deps), basic Prisma migration risk, `/codeguardian`
+conversation loop, GitHub-native memory (workflow artifacts). Python language
+support is **partial**: the dependency/blast-radius and tests analyzers are
+Python-aware; types/API-contract/database analyzers remain JS/TS-only (see
+[doc/POST-V1-ROADMAP.md](doc/POST-V1-ROADMAP.md)).
 
 **Out of scope for MVP** (don't build these unless explicitly asked): Neo4j
 deployment, enterprise SSO/SAML, all-language support, a learned ML risk model,

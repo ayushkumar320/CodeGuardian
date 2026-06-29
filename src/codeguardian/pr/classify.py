@@ -16,17 +16,25 @@ _CONFIG_NAMES = (
     ".eslintrc",
 )
 _TEST_MARKERS = (".test.", ".spec.", "__tests__/", "/tests/", "/test/")
+# Python test conventions (PEP 8 / pytest): file basenames `test_*.py` / `*_test.py`.
+_PY_TEST_BASENAMES = ("test_", "_test.py")
 _DB_MARKERS = ("migration", "migrations/", "schema.prisma", ".sql")
 _TYPES_MARKERS = (".types.ts", ".d.ts", "/types/")
 _FRONTEND_EXT = (".tsx", ".jsx", ".css", ".scss", ".vue", ".svelte")
-_BACKEND_EXT = (".ts", ".js", ".mjs", ".cjs")
+_BACKEND_EXT = (".ts", ".js", ".mjs", ".cjs", ".py")
+
+
+def _is_python_test(path: str, name: str) -> bool:
+    if not name.endswith(".py"):
+        return False
+    return name.startswith("test_") or name.endswith("_test.py")
 
 
 def classify(path: str) -> FileCategory:
     p = path.lower()
     name = p.rsplit("/", 1)[-1]
 
-    if any(m in p for m in _TEST_MARKERS):
+    if any(m in p for m in _TEST_MARKERS) or _is_python_test(p, name):
         return FileCategory.test
     if any(m in p for m in _DB_MARKERS):
         return FileCategory.database
