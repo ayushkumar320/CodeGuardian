@@ -88,6 +88,7 @@ Pick the topic, open only the listed target.
 | Beta plan / FP-FN feedback templates | `.github/ISSUE_TEMPLATE/{false-positive,false-negative,bug,config}.yml` |
 | Triage process / beta bookkeeping | [SUPPORT.md](SUPPORT.md) |
 | v1.0 cut sequence (what's automated vs human) | [doc/GA-CHECKLIST.md](doc/GA-CHECKLIST.md) |
+| Concrete improvement queue (P0/P1/P2 backlog) | [doc/IMPROVEMENT-PLAN.md](doc/IMPROVEMENT-PLAN.md) |
 | Post-v1.0 roadmap (deferred scope) | [doc/POST-V1-ROADMAP.md](doc/POST-V1-ROADMAP.md) |
 | Scoring weights / default thresholds (to tune from beta) | `src/codeguardian/scoring.py` ; `policy.Thresholds` ; `policy.NoiseBudget` |
 | Risk report / finding schema | P1 "Finding Schema" ; P4 "Finding schema" |
