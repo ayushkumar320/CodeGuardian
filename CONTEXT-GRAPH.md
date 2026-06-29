@@ -85,9 +85,11 @@ Pick the topic, open only the listed target.
 | Automated release workflow / moving major tag / SemVer | `.github/workflows/release.yml` ; [RELEASING.md](doc/RELEASING.md) |
 | Consumer example workflows | [`examples/`](examples/README.md) (public, private+Groq, required-check, monorepo) |
 | Marketplace listing metadata + badges | `action.yml` (`name`/`description`/`branding`/`author`) ; `README.md` (badges) |
-| Beta plan / dogfood repos / false-positive feedback loop | P12 "Scope", "Deliverables", "Acceptance Criteria" |
-| Scoring and threshold tuning for low false positives | P12 "Scope", "Deliverables" |
-| GA readiness / support-triage / post-v1 roadmap | P12 "Scope", "Deliverables" |
+| Beta plan / FP-FN feedback templates | `.github/ISSUE_TEMPLATE/{false-positive,false-negative,bug,config}.yml` |
+| Triage process / beta bookkeeping | [SUPPORT.md](SUPPORT.md) |
+| v1.0 cut sequence (what's automated vs human) | [doc/GA-CHECKLIST.md](doc/GA-CHECKLIST.md) |
+| Post-v1.0 roadmap (deferred scope) | [doc/POST-V1-ROADMAP.md](doc/POST-V1-ROADMAP.md) |
+| Scoring weights / default thresholds (to tune from beta) | `src/codeguardian/scoring.py` ; `policy.Thresholds` ; `policy.NoiseBudget` |
 | Risk report / finding schema | P1 "Finding Schema" ; P4 "Finding schema" |
 | LangGraph node list / state contract | P1 "LangGraph MVP Nodes" ; P2 "LangGraph State Contract" |
 | Agent graph + per-agent rules | P2 "Agent Graph" ; BP §4 |

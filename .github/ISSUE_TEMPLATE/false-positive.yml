@@ -1,0 +1,66 @@
+name: False positive
+description: A CodeGuardian finding that shouldn't have fired
+title: "[FP] <short description>"
+labels: ["false-positive", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the feedback — false-positive reports are the most valuable
+        signal we get. The point of CodeGuardian is **fewer, right findings**,
+        so a noisy finding is a real bug.
+
+  - type: input
+    id: finding_id
+    attributes:
+      label: Finding ID
+      description: "e.g. `CG-DB-002`, `CG-API-001`. Visible in the sticky comment and report JSON."
+      placeholder: CG-XXX-NNN
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - dependency
+        - test
+        - types
+        - api
+        - database
+        - architecture
+        - other
+    validations:
+      required: true
+
+  - type: input
+    id: pr_link
+    attributes:
+      label: PR link (or repo snippet)
+      description: A link to the PR helps a lot. Public repos preferred; if it's private, paste the relevant diff snippet below instead.
+
+  - type: textarea
+    id: why_wrong
+    attributes:
+      label: Why this finding is wrong
+      description: What did CodeGuardian flag, and why is it not actually a risk here?
+      placeholder: |
+        e.g. "It flagged a layer violation because file X imports Y, but Y is
+        intentionally a shared util — our policy.yml just doesn't list that
+        layer pair yet."
+    validations:
+      required: true
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: What you did about it
+      description: Did you suppress via `/codeguardian ignore`, change `policy.yml`, or live with the noise?
+
+  - type: input
+    id: version
+    attributes:
+      label: CodeGuardian version
+      description: "From the sticky comment footer or the tag in your workflow (e.g. v0)."
+      placeholder: v0

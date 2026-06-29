@@ -1,0 +1,41 @@
+name: False negative
+description: A PR broke something and CodeGuardian didn't flag it
+title: "[FN] <short description>"
+labels: ["false-negative", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Missed risk is the other side of the precision/recall coin. Tell us what
+        broke so we can fold it into the analyzers and tests.
+
+  - type: input
+    id: pr_link
+    attributes:
+      label: PR link
+      description: The merged PR that broke things. Public repos preferred.
+
+  - type: textarea
+    id: what_broke
+    attributes:
+      label: What broke after merge
+      description: Short description of the incident — what failed, where, and how it was discovered.
+    validations:
+      required: true
+
+  - type: textarea
+    id: signal_we_missed
+    attributes:
+      label: The signal we missed
+      description: |
+        In hindsight, what about the diff could/should have flagged the risk?
+        e.g. "two API routes changed shape but no clients were updated", or
+        "a migration dropped a column with no compatibility window".
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: CodeGuardian version
+      placeholder: v0

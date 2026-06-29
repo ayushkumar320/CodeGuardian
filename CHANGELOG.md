@@ -7,6 +7,17 @@ All notable changes to CodeGuardian AI. Format based on
 ## [Unreleased]
 
 ### Added
+- **Beta scaffolding for v1.0** (Phase 12):
+  - Issue templates for [false-positive](.github/ISSUE_TEMPLATE/false-positive.yml),
+    [false-negative](.github/ISSUE_TEMPLATE/false-negative.yml), and
+    [bug](.github/ISSUE_TEMPLATE/bug.yml); each auto-labelled `needs-triage` so
+    the feedback loop can be tracked.
+  - [`SUPPORT.md`](SUPPORT.md) documents the triage process and bookkeeping for
+    beta false-positive / false-negative reports.
+  - [`doc/GA-CHECKLIST.md`](doc/GA-CHECKLIST.md) is the step-by-step sequence for
+    cutting v1.0, including the deferred Phase-7 pre-release gate.
+  - [`doc/POST-V1-ROADMAP.md`](doc/POST-V1-ROADMAP.md) records what v1.0 is
+    deliberately *not* doing and where contributors can pick up post-GA.
 - **Reproducible packaging** (Phase 11): `requirements.lock` pins every transitive
   dependency. The Action installs from the lockfile and then installs its own
   package with `--no-deps`, so there is no live PyPI resolution at run time. CI's

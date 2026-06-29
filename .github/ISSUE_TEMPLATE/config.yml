@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/ayushkumar320/CodeGuardian/security/advisories/new
+    about: Please report vulnerabilities privately via GitHub Security Advisories — see SECURITY.md.
+  - name: Question / discussion
+    url: https://github.com/ayushkumar320/CodeGuardian/discussions
+    about: Usage questions, feature ideas, or anything that isn't a bug or feedback report.

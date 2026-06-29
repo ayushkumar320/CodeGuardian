@@ -24,7 +24,7 @@ runs zero-key deterministic. Detail: [archive/](doc/build/archive/).
 | P9 | Security & supply-chain hardening (fork-PR safety, injection corpus) | ✅ DONE — code + CI + docs landed; SBOM/signed releases deferred to P11 |
 | P10 | Performance & scale (shared import graph, memory compaction) | ✅ DONE — all acceptance criteria met (minor wall-clock soft-timeout deferred) |
 | P11 | Release engineering & Marketplace (reproducible packaging, automation) | ✅ DONE — code-side complete; Marketplace UI publish is a one-time manual step on first release |
-| **P12** | **Beta, tuning & v1.0 GA** | **▶ NEXT** |
+| **P12** | **Beta, tuning & v1.0 GA** | **🟡 IN PROGRESS — scaffolding landed; remainder needs real beta runs (see below)** |
 
 ## 🟡 Phase 7 — partially validated; remainder is a pre-release gate
 
@@ -186,6 +186,31 @@ releases**. Both are release-workflow additions and can land alongside the first
 tag without re-cutting work here.
 
 Coverage: 116 tests green.
+
+## Phase 12 — beta, tuning & v1.0 GA 🟡 IN PROGRESS
+
+Scaffolding is complete; the remaining work needs real beta runs (necessarily
+human-driven). See [doc/GA-CHECKLIST.md](doc/GA-CHECKLIST.md) for the full
+step-by-step sequence to cut v1.0.
+
+**Landed (this repo):**
+- Issue templates (`.github/ISSUE_TEMPLATE/`) for false positives, false
+  negatives, and bugs; auto-label `needs-triage`.
+- `SUPPORT.md` — where to file what + triage process + beta bookkeeping rules.
+- `doc/GA-CHECKLIST.md` — the v1.0 cut sequence (marks which steps are human).
+- `doc/POST-V1-ROADMAP.md` — what v1.0 is deliberately *not* doing.
+- Default policy is already advisory + quiet (test-pinned in
+  `tests/test_phase12_beta_infrastructure.py`).
+
+**Remaining (human-driven):**
+- Run CodeGuardian on at least 3 friendly repos in advisory mode for ≥ 2 weeks.
+- Triage the resulting FP/FN reports; document tuning changes with rationale.
+- Run the deferred Phase-7 live gate (private + fork PR; sticky/upsert; command
+  loop on `/codeguardian`).
+- Bump version to `1.0.0`, push the `v1.0.0` tag, publish to the Marketplace
+  from the Release UI.
+
+Coverage: 120 tests green.
 
 ## Open operational items (not new phases)
 
