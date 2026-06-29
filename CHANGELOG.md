@@ -6,6 +6,21 @@ All notable changes to CodeGuardian AI. Format based on
 
 ## [Unreleased]
 
+### Added
+- **Language-agnostic baseline** so CodeGuardian is useful on *any* repo, not
+  only JS/TS/Python (still keeping strict rule #2 — no fabricated findings):
+  - New `languages` module with a public **support matrix** declaring which
+    deterministic analyzers exist per language. Adding a language is a small
+    change there.
+  - New `analyzers/pr_shape.py` emits PR-level signals that don't need a code
+    parser: **large-PR** (file-count) and **deletion-heavy** (net-removed)
+    findings under the new `Category.pr_shape`. Configurable via
+    `policy.pr_shape` (`large_pr_files=50`, `deletion_heavy_min_net_removed=200`).
+  - When a PR is fully in a language with no deep analyzer (Go, Rust, Ruby, …),
+    `repository_context` surfaces an **honest "language-agnostic mode" note** on
+    the check + sticky comment so a low score isn't misread as "all clear".
+  - README now ships a [language support matrix](README.md#language-support).
+
 ## [0.2.0] - 2026-06-30
 
 First tagged release. The MVP (Phases 0–6) was finished as `0.1.0` but never

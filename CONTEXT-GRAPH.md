@@ -135,6 +135,9 @@ Python package at `src/codeguardian/`. Stack: Python + LangGraph + Pydantic.
 | PR diff from git / file classification | `src/codeguardian/pr/diff.py`, `pr/classify.py` |
 | Deterministic analyzers (import blast radius, missing tests) | `src/codeguardian/analyzers/imports.py`, `analyzers/tests.py` |
 | Python language support (dependency + tests + arch) | `src/codeguardian/analyzers/imports.py` (`_extract_py_imports`, `_resolve_py`) ; `analyzers/tests.py` (`_candidate_tests` Python branch) ; `pr/classify.py` (Python test/backend rules) |
+| Language detection + support matrix | `src/codeguardian/languages.py` (`detect`, `supports`, `_EXT_TO_LANG`, `_SUPPORT`) |
+| Language-agnostic PR-shape analyzer | `src/codeguardian/analyzers/pr_shape.py` ; `policy.PrShape` ; `models.Category.pr_shape` |
+| "Language-agnostic mode" degraded note | `graph/nodes.py` (`repository_context` — calls `languages.detect`, surfaces via `notes`) |
 | Deterministic analyzers (API contract, DB/migration, architecture) | `src/codeguardian/analyzers/api.py`, `analyzers/database.py`, `analyzers/architecture.py` |
 | Risk scoring (confidence-weighted aggregate) | `src/codeguardian/scoring.py` |
 | Provider router Groq→HF→deterministic + output schema validation | `src/codeguardian/providers.py` (`validate_summary`) |

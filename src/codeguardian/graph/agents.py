@@ -21,6 +21,7 @@ from ..analyzers import api as api_analyzer
 from ..analyzers import architecture as arch_analyzer
 from ..analyzers import database as db_analyzer
 from ..analyzers import imports as imports_analyzer
+from ..analyzers import pr_shape as pr_shape_analyzer
 from ..analyzers import tests as tests_analyzer
 from ..analyzers import types as types_analyzer
 from ..memory.record import Signature
@@ -101,6 +102,14 @@ def architecture_agent(state: CodeGuardianState) -> dict:
             state["repo_root"], state["diff"], state["policy"].architecture,
             graph=state.get("import_graph"),
         ),
+    )
+
+
+def pr_shape_agent(state: CodeGuardianState) -> dict:
+    """Language-agnostic — runs on docs-only PRs too (large docs reorgs count)."""
+    return _safe(
+        "pr_shape",
+        lambda: pr_shape_analyzer.analyze(state["diff"], state["policy"].pr_shape),
     )
 
 

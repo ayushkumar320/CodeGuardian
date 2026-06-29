@@ -40,6 +40,7 @@ class Category(str, Enum):
     architecture = "architecture"
     test = "test"
     history = "history"
+    pr_shape = "pr_shape"  # language-agnostic PR-level signals (size, churn)
 
 
 class Severity(str, Enum):

@@ -10,6 +10,7 @@ from __future__ import annotations
 import os
 
 from ..analyzers.imports import build_import_graph
+from ..languages import _EXT_TO_LANG, detect as detect_languages
 from ..models import FileCategory, RepositoryContext
 from ..pr.diff import compute_diff
 from ..walk import iter_repo_files
@@ -65,7 +66,10 @@ def repository_context(state: CodeGuardianState) -> dict:
     for rel in iter_repo_files(root, max_files=perf.max_files, max_file_bytes=perf.max_file_bytes):
         fn = rel.rsplit("/", 1)[-1]
         ext = os.path.splitext(fn)[1].lower()
-        if ext in _CODE_EXT:
+        # Count any known language extension, not just the deep-supported ones,
+        # so the language report can describe what's actually in the repo
+        # (graceful-degradation tier).
+        if ext in _EXT_TO_LANG or ext in _CODE_EXT:
             langs[ext] = langs.get(ext, 0) + 1
         if fn == "package.json":
             manifests.append(rel)
@@ -74,6 +78,28 @@ def repository_context(state: CodeGuardianState) -> dict:
             frameworks.add("prisma")
         if ".test." in fn or ".spec." in fn or "__tests__/" in rel:
             tests.append(rel)
+
+    # Honest language matrix: tell the user when this PR is fully in a language
+    # we don't deeply analyze, so a low score isn't misread as "all clear"
+    # (graceful-degradation tier — strict rule #2 won't let us fabricate findings).
+    notes: list[str] = []
+    lr = detect_languages(
+        language_summary=langs,
+        changed_paths=[f.path for f in state.get("diff", [])],
+    )
+    if lr.fully_unsupported_pr:
+        names = ", ".join(lr.unsupported_in_pr)
+        notes.append(
+            f"Language-agnostic mode: this PR touches {names}, which has no "
+            f"deep CodeGuardian analyzer yet. Only PR-shape and high-risk path "
+            f"signals will fire — a low score does not mean low risk."
+        )
+    elif lr.unsupported_in_pr:
+        names = ", ".join(lr.unsupported_in_pr)
+        notes.append(
+            f"Partial analysis: {names} files in this PR get only language-"
+            f"agnostic signals (PR shape, high-risk paths)."
+        )
 
     return {
         "repository": RepositoryContext(
@@ -85,6 +111,7 @@ def repository_context(state: CodeGuardianState) -> dict:
         # Build the import graph once here (before the parallel domain fan-out) so
         # every analyzer shares it instead of rebuilding (Phase 10).
         "import_graph": build_import_graph(root, perf.max_files, perf.max_file_bytes),
+        "notes": notes,
     }
 
 

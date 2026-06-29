@@ -133,6 +133,30 @@ focuses on:
 - missing or mismatched test coverage
 - historical similarity from GitHub-native memory
 
+## Language support
+
+CodeGuardian runs on **any repo** — but what it can *say* about your code
+depends on the language. Per strict rule #2 (deterministic-first), each
+analyzer is real parsing work; we don't let the LLM fabricate findings for
+languages we don't have a parser for.
+
+| Language     | Dependency / blast-radius | Tests (missing + impacted) | Architecture (layers / cycles) | Types-breaking | API contract | DB migrations |
+|--------------|:-:|:-:|:-:|:-:|:-:|:-:|
+| TypeScript / JavaScript | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ (Prisma) |
+| Python                  | ✅ | ✅ | ✅ | ⬜ | ⬜ | ⬜ |
+| Anything else (Go, Rust, Java, Ruby, …) | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+
+**Every repo, every language**, you also get the language-agnostic baseline:
+
+- `high-risk path` edits (e.g. anything under `**/auth/**`, `**/billing/**`)
+- `pr_shape` findings: oversized PRs, deletion-heavy changes
+- An **honest "language-agnostic mode" note** on the check + sticky comment
+  when a PR touches only languages we don't deeply analyze, so a low score
+  isn't misread as "all clear"
+
+Per-language analyzer parity (types/API/DB for Python, Go support, etc.) is in
+[POST-V1-ROADMAP](doc/POST-V1-ROADMAP.md), explicitly *not* in v1.0.
+
 ## Scope Today
 
 In scope:
@@ -143,6 +167,7 @@ In scope:
 - `/codeguardian` PR commands
 - deterministic-first analysis with optional model summarization
 - GitHub-native memory via artifacts and branch-backed storage
+- **language-agnostic baseline** so the Action is useful on any repo
 
 Out of scope:
 

@@ -21,6 +21,7 @@ _DOMAIN_AGENTS = [
     ("database_agent", agents.database_agent),
     ("architecture_agent", agents.architecture_agent),
     ("types_agent", agents.types_agent),
+    ("pr_shape_agent", agents.pr_shape_agent),
 ]
 
 

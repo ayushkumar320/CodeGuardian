@@ -67,6 +67,20 @@ class Memory(BaseModel):
     retention_days: int = 180  # drop records older than this (0 = no age limit)
 
 
+class PrShape(BaseModel):
+    """Language-agnostic PR-level signals that fire on *any* repo.
+
+    These are the baseline findings every repo gets, including languages where
+    we don't have a deep analyzer yet (Go, Rust, Java, …). They're advisory by
+    default — large or deletion-heavy PRs are signals, not necessarily problems.
+    """
+    enabled: bool = True
+    # Files-touched threshold. Above this, fire a "PR scope is large" signal.
+    large_pr_files: int = 50
+    # Net-removed-lines threshold (deletions - additions). Refactor/deletion risk.
+    deletion_heavy_min_net_removed: int = 200
+
+
 class Performance(BaseModel):
     # Bound the repo walk so large monorepos stay fast (Phase 10). The walk is
     # gitignore-aware and skips vendored/build/minified files regardless.
@@ -96,6 +110,7 @@ class Policy(BaseModel):
     memory: Memory = Field(default_factory=Memory)
     model: Model = Field(default_factory=Model)
     performance: Performance = Field(default_factory=Performance)
+    pr_shape: PrShape = Field(default_factory=PrShape)
     ignored_findings: list[str] = Field(default_factory=list)  # finding IDs pre-suppressed
     high_risk_paths: list[str] = Field(
         default_factory=lambda: [
