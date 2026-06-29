@@ -35,13 +35,17 @@ jobs:
         with:
           python-version: "3.12"
       - name: Verify requirements.lock is in sync with pyproject.toml
+        # Regenerate the lockfile in place (so pip-compile's autogen comment
+        # records the same output path the committed file does) and let `git
+        # diff` decide whether the content actually changed.
         run: |
           pip install --quiet pip-tools
-          pip-compile --strip-extras --quiet --output-file=/tmp/requirements.lock pyproject.toml
-          diff -u requirements.lock /tmp/requirements.lock || {
+          pip-compile --strip-extras --quiet --output-file=requirements.lock pyproject.toml
+          if ! git diff --quiet -- requirements.lock; then
             echo "::error::requirements.lock is out of sync with pyproject.toml; run: pip-compile --strip-extras --output-file=requirements.lock pyproject.toml"
+            git --no-pager diff -- requirements.lock
             exit 1
-          }
+          fi
 
   action-smoke:
     # Validates the packaged Action runs in deterministic mode with no keys.
