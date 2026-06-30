@@ -1,6 +1,6 @@
-# Private repository, with the optional Groq provider for nicer summaries.
-# Settings -> Secrets and variables -> Actions:  add GROQ_API_KEY.
-# Everything still works without it (zero-key deterministic fallback).
+# Private repository, with the Groq provider.
+# Settings -> Secrets and variables -> Actions:  add GROQ_API_KEY (or HF_TOKEN).
+# A model key is REQUIRED — without one, non-fork PRs are not analyzed.
 name: CodeGuardian Risk
 on:
   pull_request:

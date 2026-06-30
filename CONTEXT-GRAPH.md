@@ -121,7 +121,9 @@ Topic → the symbol or file to open.
   comment events for the conversation loop.
 - Trigger token: `/codeguardian` (preferred); `@codeguardian` still accepted
   for back-compat (but pings a stranger — IMPROVEMENT-PLAN P0-5 sunsets it).
-- Provider fallback: **Groq → Hugging Face → deterministic** (zero-key must work).
+- Provider chain: **Groq → Hugging Face**. A model key is **required** —
+  non-fork PRs are gated without one (`__main__._has_model_key` /
+  `_require_key_and_exit`); fork PRs degrade through the deterministic engine.
 - LLM only synthesizes / answers free-form; deterministic analyzers own the
   evidence. Strict rule #2: no LLM-fabricated findings, ever.
 - Languages: JS/TS full; Python dependency+tests+arch; everything else gets the

@@ -7,11 +7,11 @@ branding:
 
 inputs:
   groq-api-key:
-    description: "Optional Groq API key for fast LLM summaries. Absent -> next fallback."
+    description: "Groq API key (preferred). REQUIRED unless hf-token is set; without either, non-fork PRs are not analyzed."
     required: false
     default: ""
   hf-token:
-    description: "Optional Hugging Face token (fallback LLM + embeddings). Absent -> deterministic."
+    description: "Hugging Face token (alternative to groq-api-key; also embeddings). One model key is required."
     required: false
     default: ""
   github-token:

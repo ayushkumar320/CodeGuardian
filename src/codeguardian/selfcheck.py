@@ -15,6 +15,7 @@ from typing import Optional
 
 from .http import request as http_request
 from .log import get_logger
+from .models import Provider
 from .providers import select_provider
 
 _API = "https://api.github.com"
@@ -61,8 +62,12 @@ def _check_github_token(env: Optional[dict] = None) -> _Check:
 def _check_provider(env: Optional[dict] = None) -> _Check:
     env = env if env is not None else os.environ
     provider = select_provider(env)
-    detail = f"selected: {provider.value} (deterministic fallback always available)"
-    return _Check("model provider", True, detail, required=False)
+    if provider == Provider.deterministic:
+        return _Check(
+            "model provider", False,
+            "no GROQ_API_KEY / HF_TOKEN — a model key is required", required=True,
+        )
+    return _Check("model provider", True, f"selected: {provider.value}", required=True)
 
 
 def run_selfcheck(env: Optional[dict] = None) -> int:

@@ -2,8 +2,8 @@
 
 > **In one minute:** CodeGuardian runs on every pull request, predicts what the
 > change can break, and posts a `CodeGuardian Risk` check plus one sticky comment
-> — entirely inside GitHub. It works with **zero model keys** (deterministic
-> mode) and never blocks merges until you opt in.
+> — entirely inside GitHub. It **requires a model key** (`GROQ_API_KEY` or
+> `HF_TOKEN`) and never blocks merges until you opt in.
 
 Target: a new user is running in **under 10 minutes**.
 
@@ -89,31 +89,23 @@ The minimal read-only footprint (no comment, no memory) is `checks: write` +
 `contents: read`. See [SECURITY.md](../SECURITY.md) and
 [THREAT-MODEL.md](THREAT-MODEL.md) for the full security posture.
 
-## 3. (Optional) Add a model provider
+## 3. (Required) Add a model provider key
 
-CodeGuardian routes **Groq → Hugging Face → deterministic**. Models only rephrase
-the summary — they never set the score or invent findings. Add either secret to
-get nicer prose:
+CodeGuardian **requires** a model provider key. Routing is **Groq → Hugging
+Face**. Add at least one secret:
 
 - `GROQ_API_KEY` — fast summaries (recommended).
-- `HF_TOKEN` — fallback + embeddings.
+- `HF_TOKEN` — alternative / fallback + embeddings.
 
 Repo → Settings → Secrets and variables → Actions → New repository secret.
 
-Setting `GROQ_API_KEY` (or `HF_TOKEN`) makes the LLM summary run on **every** PR —
-"optional" only means CodeGuardian won't crash without it. If you want a
-**guarantee** the model ran and a loud warning when a token is missing (rather
-than a silent deterministic fallback), opt in via policy:
+Without a key, CodeGuardian does **not** analyze a (non-fork) PR — it posts a
+"needs a key" check and sticky comment telling you to add one, and the run fails.
+The deterministic analyzers still own all findings/score; the model only
+rephrases the summary and can never set the score or invent a finding.
 
-```yaml
-# .codeguardian/policy.yml
-model:
-  require_model: true        # warn (degraded) when no provider token is configured
-  block_when_missing: false  # set true to also fail the check
-```
-
-This stays opt-in so the default product — and **all fork PRs**, which never
-receive secrets — keep working with zero keys.
+**Fork PRs are the one exception:** they receive read-only tokens and can't carry
+secrets, so they degrade through the deterministic engine instead of being gated.
 
 ## 4. Configure (optional): `.codeguardian/policy.yml`
 

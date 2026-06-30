@@ -92,13 +92,23 @@ def test_selfcheck_passes_with_no_token(monkeypatch, capsys):
     assert "GITHUB_TOKEN" in out
 
 
-def test_selfcheck_passes_with_reachable_token(monkeypatch):
+def test_selfcheck_passes_with_reachable_token_and_model_key(monkeypatch):
     def fake_request(method, url, timeout=None, **kwargs):
         return Resp(status_code=200, headers={"X-RateLimit-Remaining": "4999"})
 
     monkeypatch.setattr(http.requests, "request", fake_request)
-    rc = run_selfcheck({"GITHUB_TOKEN": "t", "GITHUB_REPOSITORY": "o/r"})
+    # A model key is now required for a clean self-check.
+    rc = run_selfcheck({"GITHUB_TOKEN": "t", "GITHUB_REPOSITORY": "o/r", "GROQ_API_KEY": "k"})
     assert rc == 0
+
+
+def test_selfcheck_fails_without_model_key(monkeypatch):
+    def fake_request(method, url, timeout=None, **kwargs):
+        return Resp(status_code=200, headers={"X-RateLimit-Remaining": "4999"})
+
+    monkeypatch.setattr(http.requests, "request", fake_request)
+    rc = run_selfcheck({"GITHUB_TOKEN": "t", "GITHUB_REPOSITORY": "o/r"})  # no key
+    assert rc == 1
 
 
 def test_provider_timeout_falls_through_to_deterministic(monkeypatch):

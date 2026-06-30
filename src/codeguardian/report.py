@@ -288,6 +288,37 @@ def annotations_from_report(report: Report, policy: Policy) -> list[dict]:
     return out
 
 
+# --- Model-key requirement ----------------------------------------------------
+# CodeGuardian requires a model provider key (Groq or Hugging Face). Without one
+# it does not analyze (except fork PRs, which can't carry secrets and degrade).
+KEY_REQUIRED_TITLE = "CodeGuardian needs a model key"
+
+
+def key_required_check_summary() -> str:
+    return (
+        "## CodeGuardian needs a model key\n\n"
+        "CodeGuardian requires a model provider key to run. No `GROQ_API_KEY` "
+        "or `HF_TOKEN` is configured for this repository, so the analysis was "
+        "skipped.\n\n"
+        "**To enable CodeGuardian:** add one of these as a repository secret "
+        "(Settings → Secrets and variables → Actions):\n"
+        "- `GROQ_API_KEY` — fast summaries (recommended)\n"
+        "- `HF_TOKEN` — Hugging Face fallback\n\n"
+        "Then re-run the workflow or push a new commit."
+    )
+
+
+def key_required_comment() -> str:
+    return (
+        f"{SUMMARY_ANCHOR}\n"
+        "## CodeGuardian needs a model key\n\n"
+        "I'm installed on this PR but no model provider key is configured, so I "
+        "can't run. Add **`GROQ_API_KEY`** or **`HF_TOKEN`** as a repository "
+        "secret (Settings → Secrets and variables → Actions), then push a commit "
+        "or comment `/codeguardian recheck`."
+    )
+
+
 def markdown_artifact(report: Report, policy: Policy, narrative: str) -> str:
     return sticky_comment(report, policy, narrative).replace(SUMMARY_ANCHOR + "\n", "")
 

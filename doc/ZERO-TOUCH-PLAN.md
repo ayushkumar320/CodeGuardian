@@ -7,7 +7,8 @@ cockpit** the repo owner activates once. Companion to
 backlog); this doc owns the larger workflow change.
 
 All four strict-rule guardrails still bind: deterministic-first, every finding
-cites evidence, quiet by default, zero-key still works, idempotent. Nothing here
+cites evidence, quiet by default, a model key is required (non-fork PRs are
+gated without one; forks degrade), idempotent. Nothing here
 makes a model key a hard dependency.
 
 ## Decisions (locked)
@@ -75,7 +76,7 @@ CodeGuardian must not become a generic reviewer. So "quality" means
   ideally (c) newly introduced by this PR. "This change adds a real defect," not
   "your repo has 4,000 warnings."
 - **Opt-in / auto-detected:** if a tool isn't installed, the analyzer no-ops
-  (zero-key, never a hard dependency).
+  (auto-detected; a missing linter no-ops rather than failing the run).
 
 Files: `src/codeguardian/analyzers/quality.py` (new), `models.Category.quality`,
 a `quality_agent` node in `graph/build.py` + `graph/agents.py`,
@@ -89,8 +90,8 @@ Fix without adding a provider:
 - **Upgrade the Groq model** to a 70B-class option (e.g.
   `llama-3.3-70b-versatile`), configurable via env/policy (`policy.model.groq_model`).
 - **Harden synthesis:** stronger system prompts, strict JSON-shape validation
-  (extend `validate_summary`), and a richer deterministic fallback so even the
-  zero-key path reads well.
+  (extend `validate_summary`), and a richer deterministic fallback for the
+  fork-PR degraded path.
 - Deterministic-first preserved — the model still only synthesizes evidence.
 
 Files: `src/codeguardian/providers.py` (model constant → configurable;

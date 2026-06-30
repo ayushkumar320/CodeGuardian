@@ -1,6 +1,7 @@
 # Minimal CodeGuardian setup for a public repository.
-# Drop this file in at .github/workflows/codeguardian.yml and you're done —
-# CodeGuardian runs in deterministic mode with zero secrets.
+# Drop this file in at .github/workflows/codeguardian.yml. A model key is
+# REQUIRED — add GROQ_API_KEY (or HF_TOKEN) under Settings -> Secrets and
+# variables -> Actions, and pass it to the step (see private-repo-with-groq.yml).
 name: CodeGuardian Risk
 on:
   pull_request:

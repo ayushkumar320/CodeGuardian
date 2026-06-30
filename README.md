@@ -51,19 +51,20 @@ jobs:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }   # required: full history for the diff
       - uses: your-org/CodeGuardian@v0
-        # No secrets needed. The two inputs below are OPTIONAL — without them
-        # CodeGuardian runs fully in deterministic mode.
+        # A model key is REQUIRED. Provide at least one of the two below
+        # (Groq preferred). Without a key, CodeGuardian does not analyze and
+        # posts a "needs a key" check instead.
         with:
-          groq-api-key: ${{ secrets.GROQ_API_KEY }}   # optional
-          hf-token: ${{ secrets.HF_TOKEN }}           # optional
+          groq-api-key: ${{ secrets.GROQ_API_KEY }}   # required (or hf-token)
+          hf-token: ${{ secrets.HF_TOKEN }}           # alternative to groq
 ```
 
-**No API keys are required.** Provider fallback is
-**Groq → Hugging Face → deterministic**, and the deterministic path is the
-baseline: it produces the full score, findings, and recommendations with **zero
-model keys**. A model, if configured, only rephrases the summary prose — it can
-never set the score or invent a finding. Groq/HF are an optional nicety, not a
-dependency.
+**A model key is required.** Provide **`GROQ_API_KEY`** or **`HF_TOKEN`** (Groq
+preferred); on a non-fork PR with no key, CodeGuardian does not analyze and posts
+a "needs a key" check instead. The deterministic analyzers still own the full
+score, findings, and recommendations — the model only rephrases the summary prose
+and can never set the score or invent a finding. Fork PRs (which can't carry
+secrets) are the one exception and degrade through the deterministic engine.
 
 > **Want to try it before installing anything?** You can run the exact same
 > analysis on any local repo with no token and no PR:

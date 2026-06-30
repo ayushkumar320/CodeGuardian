@@ -24,9 +24,14 @@ rather than silently breaking it.
 2. **Deterministic-first, always.** Static analysis / graph / scoring produce
    evidence; the LLM only synthesizes. A model must **never** create a finding
    with no analyzer evidence behind it.
-3. **The product must run with zero model keys.** Groq → Hugging Face →
-   deterministic fallback. Never make an LLM call a hard dependency of the
-   baseline path.
+3. **A model key is required to run.** A provider key (`GROQ_API_KEY` or
+   `HF_TOKEN`) is mandatory: on a non-fork PR with no key configured,
+   CodeGuardian does **not** analyze — it publishes a "needs a key" check +
+   comment and exits. The provider chain is still Groq → Hugging Face, and the
+   deterministic analyzers still own all findings/score (the LLM only
+   synthesizes — rule #2). The deterministic engine is retained as the
+   **degraded carve-out for fork PRs**, which receive read-only tokens and
+   cannot carry secrets. (This supersedes the earlier zero-key principle.)
 4. **Every finding cites evidence** (files, graph edges, rules, or history). No
    evidence → no finding.
 5. **Quiet by default.** One sticky PR comment + the `CodeGuardian Risk` check.
@@ -102,10 +107,13 @@ always-on hosted SaaS required.
 
 ### Model strategy (provider fallback chain)
 
-1. **Groq** (`GROQ_API_KEY`) — fast summarization/classification when present.
+1. **Groq** (`GROQ_API_KEY`) — fast summarization/classification (preferred).
 2. **Hugging Face** (`HF_TOKEN`) — fallback, and embeddings when available.
-3. **Deterministic** — must work with **no model keys at all**. This is a hard
-   requirement: the baseline product runs without any LLM.
+3. **Deterministic** — the static-analysis engine that owns all findings/score.
+   It is **no longer a zero-key product path**: a run on a non-fork PR with no
+   key is gated (see strict rule #3). Deterministic-only execution is kept for
+   **fork PRs** (no secrets) and internal safety/degradation, not as a
+   supported keyless mode.
 
 ## Non-negotiable principles for any implementation
 

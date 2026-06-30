@@ -7,10 +7,11 @@ without expanding the GA scope.
 ## v1.0 is
 
 - A **GitHub-Action-native, pre-merge risk checker** for JS/TS/Node/React/Next.
-- **Deterministic-first.** Static analysis owns the score and findings; an LLM
-  (optional) rephrases the summary only.
+- **Deterministic-first.** Static analysis owns the score and findings; the LLM
+  rephrases the summary only.
 - **Quiet by default.** One check, one sticky comment. Blocking is opt-in.
-- **Zero-key by default.** Groq/HF are optional.
+- **A model key is required.** Groq or HF must be configured; non-fork PRs are
+  not analyzed without one (fork PRs degrade through the deterministic engine).
 
 ## What v1.0 is not — and why
 
@@ -21,7 +22,7 @@ the notes are the starting point.
 - *Not in v1.0.* Strict rule #8 keeps the product GitHub-Actions-native.
 - Post-v1.0 path: a thin hosted endpoint to centralize memory and benchmarks
   across consumer repos. Only worth doing if there's clear demand and a way to
-  keep the zero-key, in-Action default working unchanged.
+  keep the in-Action default working unchanged.
 
 ### More language support
 - *Partial in v1.0.* JS/TS is the primary target; **Python has dependency +

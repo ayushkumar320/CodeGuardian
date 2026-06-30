@@ -36,6 +36,9 @@ from .report import (
     check_summary,
     check_title,
     json_artifact,
+    key_required_check_summary,
+    key_required_comment,
+    KEY_REQUIRED_TITLE,
     markdown_artifact,
     sticky_comment,
 )
@@ -127,6 +130,30 @@ def _can_publish(pr: PrContext) -> bool:
     return not pr.is_fork
 
 
+def _has_model_key(env: dict | None = None) -> bool:
+    """A model provider key is required to run (Groq or Hugging Face)."""
+    env = env or os.environ
+    return bool(env.get("GROQ_API_KEY") or env.get("HF_TOKEN"))
+
+
+def _require_key_and_exit(pr: PrContext, policy: Policy) -> int:
+    """No model key configured on a non-fork PR: do not analyze. Publish a
+    clear 'needs a key' check + sticky comment and fail the run so the
+    requirement is visible at the merge box. Fork PRs never reach here — they
+    can't carry secrets and are handled as a degraded carve-out upstream."""
+    client = GitHubClient()
+    try:
+        client.publish_check(
+            pr.owner, pr.repo, pr.head_sha, "action_required",
+            KEY_REQUIRED_TITLE, key_required_check_summary(),
+        )
+        client.upsert_sticky_comment(pr.owner, pr.repo, pr.number, key_required_comment())
+    except Exception as exc:  # noqa: BLE001 - never crash on GitHub I/O
+        _log.warning("key-required publish failed: %s", exc)
+    print("CodeGuardian: no GROQ_API_KEY / HF_TOKEN configured; analysis skipped (a model key is required).")
+    return 1
+
+
 def _analyze_and_publish(repo_root: str, pr: PrContext, policy: Policy) -> Report:
     store = _memory_store(repo_root, policy) if _can_publish(pr) else None
     report, narrative = run_analysis(repo_root, pr, policy, memory_store=store)
@@ -171,6 +198,10 @@ def _run_pull_request(event: dict, repo_root: str) -> int:
         print(f"CodeGuardian: no pull request in event '{event_name()}'. Skipping.")
         return 0
     policy = Policy.load(repo_root)
+    # A model key is required (strict requirement). Fork PRs can't carry secrets,
+    # so they're exempt and degrade through the normal deterministic path.
+    if not _has_model_key() and not pr.is_fork:
+        return _require_key_and_exit(pr, policy)
     report = _analyze_and_publish(repo_root, pr, policy)
     return 1 if report.risk.blocking else 0
 
