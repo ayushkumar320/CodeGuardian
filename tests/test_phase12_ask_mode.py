@@ -252,3 +252,65 @@ def test_ask_prompt_no_category_mentioned_keeps_single_findings_block(monkeypatc
     handlers.ask(_report(), "what changed?")
     assert "findings_relevant_to_question" not in captured["p"]
     assert '"findings"' in captured["p"]
+
+
+# --- P0-4: zero-key intent router ---------------------------------------------
+def _no_keys(monkeypatch):
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+    monkeypatch.delenv("HF_TOKEN", raising=False)
+
+
+def test_ask_no_key_routes_tests_question_to_tests_handler(monkeypatch):
+    """P0-4: 'what tests should I run?' is answerable with zero keys."""
+    _no_keys(monkeypatch)
+    r = _report()
+    r.findings[0].recommended_actions = ["Add a regression test for pkg/board.py"]
+    reply = handlers.ask(r, "what tests should I run?")
+    assert "Recommended tests" in reply
+    assert "regression test for pkg/board.py" in reply
+    # Honest note that fuller Q&A needs a key.
+    assert "model key" in reply.lower()
+    # Not the generic "needs a model" punt.
+    assert "/codeguardian explain" not in reply
+
+
+def test_ask_no_key_routes_blocked_question_to_why_blocked(monkeypatch):
+    _no_keys(monkeypatch)
+    reply = handlers.ask(_report(), "why is this blocked?")
+    # _report() is non-blocking, so why_blocked says so explicitly.
+    assert "not blocked" in reply.lower()
+    assert "model key" in reply.lower()
+
+
+def test_ask_no_key_routes_summary_question_to_summary(monkeypatch):
+    _no_keys(monkeypatch)
+    for q in ("what changed?", "summarize this PR", "is this safe to merge?"):
+        reply = handlers.ask(_report(), q)
+        assert "CodeGuardian Risk" in reply, q
+        assert "model key" in reply.lower(), q
+
+
+def test_ask_no_key_unmatched_question_uses_generic_fallback(monkeypatch):
+    """A question that matches no router branch still gets the honest 'needs a
+    model' fallback — the router never swallows questions it can't serve."""
+    _no_keys(monkeypatch)
+    reply = handlers.ask(_report(), "what is the major change here?")
+    assert "/codeguardian explain" in reply
+    assert "model provider" in reply.lower() or "groq" in reply.lower()
+
+
+def test_ask_router_inactive_when_provider_present(monkeypatch):
+    """With a key configured, the LLM path runs even for router-shaped
+    questions — the deterministic router is only a no-key safety net."""
+    monkeypatch.setenv("GROQ_API_KEY", "test-key")
+    monkeypatch.delenv("HF_TOKEN", raising=False)
+    called = {"groq": False}
+
+    def fake_groq(prompt, env, **kw):
+        called["groq"] = True
+        return json.dumps({"summary": "LLM answer about tests."})
+
+    monkeypatch.setattr(providers, "_try_groq", fake_groq)
+    reply = handlers.ask(_report(), "what tests should I run?")
+    assert called["groq"] is True
+    assert "LLM answer about tests." in reply

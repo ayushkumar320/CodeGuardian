@@ -454,3 +454,13 @@ why a P1 jumped queue over a different P1:
   `findings_relevant_to_question` vs `findings_other` when the question
   names a category. Regression tests added in `tests/test_phase12_ask_mode.py`
   and `tests/test_phase7_live_api.py`.
+- 2026-06-30 — Shipped P0-4 (zero-key intent router). `handlers.ask` now
+  checks `select_provider()` and, on the deterministic (no-key) branch,
+  routes common question shapes to existing handlers via
+  `_route_no_provider`: "block" → `why_blocked`, "test" → `tests`,
+  summary-shaped questions → `summary`, each with a one-line note that
+  fuller Q&A needs a key. Anchors are specific ("what is this", not bare
+  "what is") so open-ended questions still fall through to the honest
+  "needs a model" fallback. 5 tests in `tests/test_phase12_ask_mode.py`.
+  Picked over P0-5 because it directly serves strict rule #3 (zero-key path
+  stays useful) and shared the warm ask-path context from the P0-1/2/3 batch.

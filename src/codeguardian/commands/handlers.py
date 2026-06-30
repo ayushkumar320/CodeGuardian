@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from typing import Optional
 
-from ..models import Report
-from ..providers import answer_question
+from ..models import Provider, Report
+from ..providers import answer_question, select_provider
 from ..report import merge_status
 
 HELP_TEXT = (
@@ -122,13 +122,53 @@ def history(report: Report) -> str:
     return "\n".join(lines)
 
 
+# Common question shapes we can answer deterministically with no model key
+# (strict rule #3). Matched in order — first hit wins — so more specific
+# intents ("why blocked") are checked before broader ones ("what is this").
+_NO_KEY_NOTE = (
+    "\n\n_Answered from the structured analysis — free-form Q&A gets richer "
+    "with a model key (`GROQ_API_KEY` / `HF_TOKEN`)._"
+)
+
+
+def _route_no_provider(report: Report, question: str) -> Optional[str]:
+    """Route common questions to deterministic handlers when no LLM is
+    configured. Returns the routed reply, or None to use the generic fallback.
+
+    Conservative on purpose: every branch lands on a handler whose answer is
+    still relevant to the question's topic, and the appended note makes clear
+    that fuller Q&A needs a key — so a near-miss still helps rather than misleads.
+    """
+    q = question.lower()
+    if "block" in q:
+        return why_blocked(report) + _NO_KEY_NOTE
+    if "test" in q:
+        return tests(report) + _NO_KEY_NOTE
+    if (
+        "what changed" in q
+        or "what's changed" in q
+        or "summar" in q
+        or "what is this" in q
+        or "what does this" in q
+        or "is this safe" in q
+        or "safe to merge" in q
+    ):
+        return summary(report) + _NO_KEY_NOTE
+    return None
+
+
 def ask(report: Report, question: str) -> str:
     """Free-form Q&A. The LLM may only describe what analyzers already found
-    (strict rule #2). When no provider is configured, falls back to a useful
-    deterministic message pointing at structured commands.
+    (strict rule #2). When no provider is configured, routes common question
+    shapes to deterministic handlers (strict rule #3) and otherwise falls back
+    to a useful message pointing at structured commands.
     """
     if not question.strip():
         return "What would you like to know? Try `/codeguardian explain` for the standard summary."
+    if select_provider() == Provider.deterministic:
+        routed = _route_no_provider(report, question)
+        if routed is not None:
+            return routed
     result = answer_question(report, question)
     # The result text already has the deterministic fallback when no key is
     # configured, so we just return it as-is.
