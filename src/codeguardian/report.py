@@ -8,7 +8,7 @@
 from __future__ import annotations
 
 from . import SUMMARY_ANCHOR
-from .models import Mode, Report, RiskLevel
+from .models import Mode, Provider, Report, RiskLevel
 from .policy import Policy
 
 _LEVEL_LABEL = {
@@ -49,6 +49,52 @@ def _header(report: Report) -> str:
     )
 
 
+_CHECK_TITLE_MAX = 110  # GitHub allows long titles; keep the merge-box glance tight.
+
+
+def _narrative_snippet(narrative: str, budget: int) -> str:
+    """First sentence-ish of the narrative, stripped of markdown, trimmed to
+    ``budget`` chars on a word boundary. Empty in -> empty out."""
+    if not narrative:
+        return ""
+    # First non-empty line; drop common markdown markers so the title reads clean.
+    line = next((ln.strip() for ln in narrative.splitlines() if ln.strip()), "")
+    for token in ("**", "`", "#", ">", "- "):
+        line = line.replace(token, "")
+    line = line.strip()
+    if len(line) <= budget:
+        return line
+    clipped = line[:budget].rsplit(" ", 1)[0]
+    return (clipped or line[:budget]).rstrip(",.;:") + "…"
+
+
+def check_title(report: Report, narrative: str) -> str:
+    """The check ``output.title`` (distinct from the check *name*, which branch
+    protection matches against). Lead with the at-a-glance score + merge verdict,
+    then append a 1-line 'what this PR does' snippet from the summary (P1-5).
+    Falls back to just the score line when there's no usable narrative.
+    """
+    verdict = "blocked" if report.risk.blocking else "allowed"
+    base = f"{report.risk.score}/10 {report.risk.level.value} — {verdict}"
+    snippet = _narrative_snippet(narrative, _CHECK_TITLE_MAX - len(base) - 2)
+    return f"{base}: {snippet}" if snippet else base
+
+
+def usage_footer(report: Report) -> str:
+    """One-line per-PR provider tally (P2-5). Counts how many steps each
+    provider served. Returns '' when everything ran deterministically (no
+    model calls), so the zero-key path stays clean and quiet."""
+    counts: dict[str, int] = {}
+    for tag in report.provider_usage:
+        provider = tag.split(":", 1)[-1]
+        counts[provider] = counts.get(provider, 0) + 1
+    billable = {p: n for p, n in counts.items() if p != Provider.deterministic.value}
+    if not billable:
+        return ""
+    parts = ", ".join(f"{p}×{n}" for p, n in sorted(billable.items()))
+    return f"Model calls this run: {parts}"
+
+
 def check_summary(report: Report, policy: Policy) -> str:
     active = report.active_findings()
     lines = [
@@ -77,6 +123,9 @@ def check_summary(report: Report, policy: Policy) -> str:
         "",
         f"_{report.mode.value} mode · {report.provider.value}_",
     ]
+    footer = usage_footer(report)
+    if footer:
+        lines += ["", f"_{footer}_"]
     if report.deterministic_notice:
         lines += ["", f"> {report.deterministic_notice}"]
     if report.errors:

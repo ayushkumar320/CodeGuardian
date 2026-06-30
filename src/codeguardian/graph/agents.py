@@ -24,6 +24,7 @@ from ..analyzers import imports as imports_analyzer
 from ..analyzers import pr_shape as pr_shape_analyzer
 from ..analyzers import tests as tests_analyzer
 from ..analyzers import types as types_analyzer
+from ..calibrate import calibrate_confidence
 from ..memory.record import Signature
 from ..memory.retrieve import context_lines, find_similar
 from ..models import DiffSummaryFile, Finding, Provider, Report, Suppression
@@ -125,6 +126,10 @@ def risk_scoring_agent(state: CodeGuardianState) -> dict:
     for f in findings:
         if f.id in ignored and f.suppressed is None:
             f.suppressed = Suppression(by="policy", reason="listed in policy.ignored_findings")
+
+    # Deterministic confidence calibration (P2-6): trivial (whitespace/comment)
+    # edits to a finding's evidence files lower its confidence before scoring.
+    calibrate_confidence(findings, state.get("diff", []))
 
     risk = score(findings, policy)
 
@@ -242,4 +247,8 @@ def recommendation_agent(state: CodeGuardianState) -> dict:
                 report.risk.blocking = True
     report.errors = errors
     report.degraded = bool(errors)
+    # Cost/usage telemetry (P2-5): record which provider served each step so the
+    # check footer can show a per-PR tally. state["provider_usage"] holds the
+    # domain-agent tags accumulated so far; add this summary call.
+    report.provider_usage = list(state.get("provider_usage", [])) + [f"summary:{result.provider.value}"]
     return {"report": report, "narrative": result.text, "provider_usage": [f"summary:{result.provider.value}"]}

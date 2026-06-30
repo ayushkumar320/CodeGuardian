@@ -167,6 +167,7 @@ class Report(BaseModel):
     errors: list[str] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)  # operational notes (e.g. diff truncated)
     diff_summary: list[DiffSummaryFile] = Field(default_factory=list)
+    provider_usage: list[str] = Field(default_factory=list)  # e.g. ["dependency_agent:deterministic", "summary:groq"]
     dedupe_key: str = ""
     deterministic_notice: Optional[str] = None
     degraded: bool = False

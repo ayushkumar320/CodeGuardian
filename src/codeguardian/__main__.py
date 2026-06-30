@@ -33,6 +33,7 @@ from .providers import deterministic_summary
 from .report import (
     check_conclusion,
     check_summary,
+    check_title,
     json_artifact,
     markdown_artifact,
     sticky_comment,
@@ -138,7 +139,7 @@ def _analyze_and_publish(repo_root: str, pr: PrContext, policy: Policy) -> Repor
             _log.warning("memory write skipped: %s", exc)
 
     client = GitHubClient()
-    title = f"{report.risk.score}/10 {report.risk.level.value} — {'blocked' if report.risk.blocking else 'allowed'}"
+    title = check_title(report, narrative)
     if not _can_publish(pr):
         print("CodeGuardian: fork PR detected; skipping check/comment/memory writes.")
         _write_job_summary(report)
