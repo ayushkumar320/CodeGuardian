@@ -483,3 +483,59 @@ def test_patch_graph_handles_removal(tmp_path):
     graph_cache.patch_graph(g, root, [DiffFile(path="pkg/a.py", status=FileStatus.removed)])
     assert "pkg/a.py" not in g.forward
     assert "pkg/a.py" not in g.reverse.get("pkg/b.py", set())
+
+
+# --- P2-2: Go support (imports + tests) ---------------------------------------
+from codeguardian.analyzers import imports as imports_analyzer
+from codeguardian.analyzers import tests as tests_analyzer
+
+
+def _go_repo(tmp_path):
+    root = str(tmp_path)
+    _write(root, "go.mod", "module github.com/acme/app\n\ngo 1.21\n")
+    _write(root, "board/board.go", "package board\n\nfunc Empty() {}\n")
+    _write(root, "game/game.go",
+           'package game\n\nimport (\n\t"fmt"\n\t"github.com/acme/app/board"\n)\n\nfunc Run() { fmt.Println(board.Empty()) }\n')
+    return root
+
+
+def test_go_module_path_parsed(tmp_path):
+    root = _go_repo(tmp_path)
+    assert imports_analyzer._go_module_path(root) == "github.com/acme/app"
+
+
+def test_go_import_graph_resolves_local_package(tmp_path):
+    root = _go_repo(tmp_path)
+    g = imports_analyzer.build_import_graph(root)
+    # game.go imports the board package -> edge to board/board.go.
+    assert "board/board.go" in g.forward["game/game.go"]
+    # stdlib "fmt" is not a repo file -> no spurious edge.
+    assert all(not t.startswith("fmt") for t in g.forward["game/game.go"])
+    # reverse blast radius: changing board.go affects game.go.
+    assert "game/game.go" in g.reverse["board/board.go"]
+
+
+def test_go_dependency_finding_from_blast_radius(tmp_path):
+    root = _go_repo(tmp_path)
+    g = imports_analyzer.build_import_graph(root)
+    from codeguardian.models import DiffFile, FileStatus
+    changed = [DiffFile(path="board/board.go", status=FileStatus.modified)]
+    findings = imports_analyzer.analyze(root, changed, high_risk_paths=[], graph=g)
+    assert any("board/board.go" in f.evidence_files for f in findings)
+
+
+def test_go_test_convention_detected():
+    assert tests_analyzer._is_test_path("board/board_test.go") is True
+    assert tests_analyzer._is_test_path("board/board.go") is False
+    assert tests_analyzer._candidate_tests("board/board.go") == ["board/board_test.go"]
+
+
+def test_go_missing_test_flagged(tmp_path):
+    root = _go_repo(tmp_path)
+    g = imports_analyzer.build_import_graph(root)
+    from codeguardian.models import DiffFile, FileStatus, FileCategory
+    changed = [DiffFile(path="board/board.go", status=FileStatus.modified,
+                        category=FileCategory.backend)]
+    findings = tests_analyzer.analyze(root, changed, graph=g)
+    # board.go has no board_test.go and no importing test -> missing-coverage finding.
+    assert any("No test found" in f.title for f in findings)

@@ -23,9 +23,13 @@ from .. import ANALYZER_VERSION
 from ..models import DiffFile, FileStatus
 from .imports import (
     _CODE_EXT,
+    _GO_EXT,
     _PY_EXT,
     _IMPORT_RE,
+    _extract_go_imports,
     _extract_py_imports,
+    _go_module_path,
+    _resolve_go,
     _resolve_py,
     _resolve_ts,
     ImportGraph,
@@ -96,7 +100,8 @@ def save_graph(path: str, graph: ImportGraph) -> bool:
     return True
 
 
-def _forward_edges_for_file(repo_root: str, rel: str, fileset: set[str]) -> set[str]:
+def _forward_edges_for_file(repo_root: str, rel: str, fileset: set[str],
+                            module_path: Optional[str] = None) -> set[str]:
     """Re-parse a single file's local imports against ``fileset``."""
     try:
         with open(os.path.join(repo_root, rel), "r", encoding="utf-8", errors="ignore") as fh:
@@ -109,6 +114,9 @@ def _forward_edges_for_file(repo_root: str, rel: str, fileset: set[str]) -> set[
             t = _resolve_py(rel, dots, mod, fileset)
             if t:
                 targets.add(t)
+    elif rel.endswith(_GO_EXT):
+        for spec in _extract_go_imports(text):
+            targets.update(t for t in _resolve_go(spec, fileset, module_path) if t != rel)
     else:
         for spec in _IMPORT_RE.findall(text):
             t = _resolve_ts(rel, spec, fileset)
@@ -127,6 +135,7 @@ def patch_graph(graph: ImportGraph, repo_root: str, changed: list[DiffFile]) -> 
     an accepted freshness tradeoff; the next default-branch build heals it.
     """
     forward, reverse = graph.forward, graph.reverse
+    module_path = _go_module_path(repo_root)
     # Current fileset reflecting the changes, so import resolution sees adds/removes.
     fileset = set(forward.keys())
     for f in changed:
@@ -156,7 +165,7 @@ def patch_graph(graph: ImportGraph, repo_root: str, changed: list[DiffFile]) -> 
             reverse.pop(rel, None)
             continue
 
-        new_targets = _forward_edges_for_file(repo_root, rel, fileset)
+        new_targets = _forward_edges_for_file(repo_root, rel, fileset, module_path)
         forward[rel] = new_targets
         reverse.setdefault(rel, set())
         for t in new_targets:

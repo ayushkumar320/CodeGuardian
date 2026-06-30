@@ -48,7 +48,60 @@ _PY_IMPORT_RE = re.compile(
     re.MULTILINE,
 )
 
-_CODE_EXT = _TS_EXT + _PY_EXT
+# --- Go (P2-2) ----------------------------------------------------------------
+_GO_EXT = (".go",)
+# Import specs in a block: `import (\n  "a/b"\n  alias "c/d"\n)`.
+_GO_BLOCK_RE = re.compile(r"import\s*\(\s*(.*?)\)", re.DOTALL)
+# A single import: `import "a/b"` or `import alias "a/b"`.
+_GO_SINGLE_RE = re.compile(r'^\s*import\s+(?:[\w.]+\s+)?"([^"]+)"', re.MULTILINE)
+_GO_QUOTED_RE = re.compile(r'"([^"]+)"')
+
+_CODE_EXT = _TS_EXT + _PY_EXT + _GO_EXT
+
+
+def _go_module_path(repo_root: str) -> str | None:
+    """The module path from go.mod (e.g. ``github.com/acme/app``), or None.
+    Local imports are prefixed with this; everything else is a third-party
+    package we don't resolve to a repo file."""
+    try:
+        with open(os.path.join(repo_root, "go.mod"), "r", encoding="utf-8", errors="ignore") as fh:
+            for line in fh:
+                line = line.strip()
+                if line.startswith("module "):
+                    return line.split(None, 1)[1].strip()
+    except OSError:
+        return None
+    return None
+
+
+def _extract_go_imports(text: str) -> list[str]:
+    specs: list[str] = []
+    for block in _GO_BLOCK_RE.finditer(text):
+        for line in block.group(1).splitlines():
+            m = _GO_QUOTED_RE.search(line)
+            if m:
+                specs.append(m.group(1))
+    for m in _GO_SINGLE_RE.finditer(text):
+        specs.append(m.group(1))
+    return specs
+
+
+def _resolve_go(spec: str, fileset: set[str], module_path: str | None) -> list[str]:
+    """A Go import names a *package* (directory). Resolve a local import to every
+    non-test ``.go`` file in that package directory — changing any of them affects
+    importers. Third-party / stdlib imports (no module prefix) resolve to nothing.
+    """
+    if not module_path or not spec.startswith(module_path + "/"):
+        return []
+    reldir = spec[len(module_path) + 1:]
+    out = []
+    for cand in fileset:
+        if not cand.endswith(".go") or cand.endswith("_test.go"):
+            continue
+        d = cand.rsplit("/", 1)[0] if "/" in cand else ""
+        if d == reldir:
+            out.append(cand)
+    return out
 
 
 def _iter_code_files(
@@ -158,6 +211,7 @@ def build_import_graph(
     """
     files = _iter_code_files(repo_root, max_files, max_file_bytes)
     fileset = set(f.replace(os.sep, "/") for f in files)
+    module_path = _go_module_path(repo_root)
     forward: dict[str, set[str]] = {f: set() for f in fileset}
     reverse: dict[str, set[str]] = {f: set() for f in fileset}
     for f in files:
@@ -173,6 +227,9 @@ def build_import_graph(
                 t = _resolve_py(importer, dots, mod, fileset)
                 if t:
                     targets.append(t)
+        elif importer.endswith(_GO_EXT):
+            for spec in _extract_go_imports(text):
+                targets.extend(t for t in _resolve_go(spec, fileset, module_path) if t != importer)
         else:  # JS/TS family
             for spec in _IMPORT_RE.findall(text):
                 t = _resolve_ts(importer, spec, fileset)
