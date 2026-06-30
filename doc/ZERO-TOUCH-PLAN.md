@@ -96,6 +96,41 @@ Fix without adding a provider:
 Files: `src/codeguardian/providers.py` (model constant → configurable;
 prompt + validation), `policy.Model` (add `groq_model`).
 
+## Workstream E — Docker container action (faster, hermetic runs)
+
+The Action is a **composite** action today: every run does `setup-python` +
+`pip install -r requirements.lock` + `pip install --no-deps .`, paying ~20–40s
+of install per run. The workflow YAML is already minimal (`uses:` one line), so
+packaging won't shorten it — but a prebuilt image removes the per-run install.
+
+This matters specifically because Workstream A/B's backfill can fire analysis on
+**every open PR at once**; 30s × N of pip install is wasted minutes at exactly
+the moment we lean on the runner hardest.
+
+**Change:** convert `action.yml` from `using: composite` to `using: docker`,
+pointing at a prebuilt image published to GHCR
+(`ghcr.io/ayushkumar320/codeguardian:<tag>`), with deps baked in at build time.
+
+- Same `uses: ayushkumar320/CodeGuardian@v1` for consumers — no workflow change.
+- Each run: no `setup-python`, no runtime pip, bit-for-bit reproducible.
+- Build + push the image from the existing release pipeline, tag in lockstep
+  with the `@vN` git tag so the floating major tag always resolves to a built
+  image.
+
+**Orthogonal (not this workstream):** publishing to **PyPI** is only for a
+local CLI / pre-commit use case; it does not touch the Action path (which installs
+from its own bundled source, not PyPI). Track separately if/when local-CLI
+demand appears.
+
+Files: `action.yml` (composite → docker), `Dockerfile` (new — base python-slim,
+copy + `pip install --no-deps .` at build), `.github/workflows/release.yml`
+(build + push to GHCR, tag alongside `@vN`), `doc/RELEASING.md` (document the
+image step).
+
+**Tradeoff:** composite is simpler to debug today; Docker adds an image
+build/publish step. Worth it once run latency/cost across many PRs bites — i.e.
+once A/B land. Hence sequenced after them.
+
 ---
 
 ## Sequencing
@@ -103,7 +138,9 @@ prompt + validation), `policy.Model` (add `groq_model`).
 1. **D** (Groq model tier + prompt hardening) — small, immediate quality lift.
 2. **A + B** (init script + `workflow_dispatch` backfill + dashboard) — the
    zero-touch activation + cockpit.
-3. **C** (quality analyzer) — new dimension behind the quiet-by-default bar.
+3. **E** (Docker container action) — once backfill makes per-run install cost
+   bite, bake deps into a prebuilt image.
+4. **C** (quality analyzer) — new dimension behind the quiet-by-default bar.
 
 ## Risks & guardrails
 
