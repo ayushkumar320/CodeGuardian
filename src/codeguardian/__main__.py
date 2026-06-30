@@ -200,7 +200,13 @@ def _run_comment(event: dict, repo_root: str) -> int:
     raw_reports = client.latest_reports(owner, repo, ce.pr_number, limit=2)
     reports = [Report.model_validate(r) for r in raw_reports]
 
-    outcome = cmd_loop.plan(command, reports, ce.author_association)
+    # Follow-up context: prior Q&A pairs in this thread, only for ask commands
+    # (P1-1). Best-effort — list_recent_asks degrades to [] on any error.
+    previous_qa = None
+    if command.name == CommandName.ask:
+        previous_qa = cmd_loop.load_recent_asks(client, owner, repo, ce.pr_number)
+
+    outcome = cmd_loop.plan(command, reports, ce.author_association, previous_qa=previous_qa)
 
     if outcome.do_recheck:
         _post_reply(client, owner, repo, ce.pr_number, marker, outcome.reply)

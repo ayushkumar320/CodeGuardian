@@ -10,6 +10,7 @@ from __future__ import annotations
 import os
 
 from ..analyzers.imports import build_import_graph
+from ..analyzers import graph_cache
 from ..languages import _EXT_TO_LANG, detect as detect_languages
 from ..models import FileCategory, RepositoryContext
 from ..pr.diff import compute_diff
@@ -109,10 +110,27 @@ def repository_context(state: CodeGuardianState) -> dict:
             test_files=tests[:200],
         ),
         # Build the import graph once here (before the parallel domain fan-out) so
-        # every analyzer shares it instead of rebuilding (Phase 10).
-        "import_graph": build_import_graph(root, perf.max_files, perf.max_file_bytes),
+        # every analyzer shares it instead of rebuilding (Phase 10). When a cache
+        # sidecar is configured (CODEGUARDIAN_GRAPH_CACHE), reuse it and patch
+        # only the changed files instead of walking the whole repo (P1-4).
+        "import_graph": _resolve_import_graph(root, perf, state.get("diff", [])),
         "notes": notes,
     }
+
+
+def _resolve_import_graph(root: str, perf, diff):
+    """Cached-and-patched graph when CODEGUARDIAN_GRAPH_CACHE points at a valid,
+    fresh sidecar; otherwise a full build (and the cache is refreshed for next
+    time). Any cache miss / staleness falls back to the full walk."""
+    cache_path = os.environ.get("CODEGUARDIAN_GRAPH_CACHE", "")
+    if cache_path:
+        cached = graph_cache.load_graph(cache_path)
+        if cached is not None:
+            return graph_cache.patch_graph(cached, root, diff)
+    graph = build_import_graph(root, perf.max_files, perf.max_file_bytes)
+    if cache_path:
+        graph_cache.save_graph(cache_path, graph)
+    return graph
 
 
 def _frameworks_from_manifest(path: str) -> set[str]:

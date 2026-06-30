@@ -7,16 +7,58 @@ optionally record a suppression.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Optional
 
 from ..models import Report
 from . import handlers, permissions
-from .parser import Command, CommandName
+from .parser import Command, CommandName, parse as parse_command
 
 
 def reply_marker(comment_id: int) -> str:
     return f"<!-- cg-reply:{comment_id} -->"
+
+
+_REPLY_REF_RE = re.compile(r"cg-reply:(\d+)")
+_QA_MAX_CHARS = 800  # per side; keep follow-up context from blowing the prompt budget
+
+
+def _strip_marker(body: str) -> str:
+    """Drop the reply marker comment + leading whitespace from a bot reply."""
+    return re.sub(r"<!--\s*cg-reply:\d+\s*-->\s*", "", body or "", count=1).strip()
+
+
+def load_recent_asks(client, owner: str, repo: str, pr_number: int, n: int = 5) -> list[dict]:
+    """Reconstruct the last ``n`` `/codeguardian <question>` ↔ bot-reply pairs
+    from the PR thread so a follow-up ("expand on the second point") has an
+    anchor (P1-1). A bot reply carries ``cg-reply:<id>`` pointing at the
+    question comment; we pair the parsed question with the reply body.
+
+    Best-effort and bounded: each side capped at 800 chars, all of it later
+    wrapped as untrusted input by the prompt builder.
+    """
+    comments = client.list_issue_comments(owner, repo, pr_number)
+    if not comments:
+        return []
+    by_id = {c.get("id"): c for c in comments}
+    pairs: list[dict] = []
+    for c in comments:
+        body = c.get("body") or ""
+        m = _REPLY_REF_RE.search(body)
+        if not m:
+            continue
+        question_comment = by_id.get(int(m.group(1)))
+        if question_comment is None:
+            continue
+        cmd = parse_command(question_comment.get("body") or "")
+        if cmd is None or cmd.name != CommandName.ask or not cmd.question:
+            continue
+        pairs.append({
+            "q": cmd.question[:_QA_MAX_CHARS],
+            "a": _strip_marker(body)[:_QA_MAX_CHARS],
+        })
+    return pairs[-n:]
 
 
 @dataclass
@@ -26,15 +68,17 @@ class Outcome:
     suppression: Optional[tuple[str, str]] = None  # (finding_id, reason)
 
 
-def plan(command: Command, reports: list[Report], author_association: str | None) -> Outcome:
-    outcome = _plan(command, reports, author_association)
+def plan(command: Command, reports: list[Report], author_association: str | None,
+         previous_qa: Optional[list[dict]] = None) -> Outcome:
+    outcome = _plan(command, reports, author_association, previous_qa)
     # Prepend the legacy-mention nudge once, above whatever reply we produced.
     if command.legacy_mention and outcome.reply:
         outcome.reply = f"{handlers.LEGACY_MENTION_WARNING}\n\n{outcome.reply}"
     return outcome
 
 
-def _plan(command: Command, reports: list[Report], author_association: str | None) -> Outcome:
+def _plan(command: Command, reports: list[Report], author_association: str | None,
+          previous_qa: Optional[list[dict]] = None) -> Outcome:
     latest = reports[0] if reports else None
     previous = reports[1] if len(reports) > 1 else None
     name = command.name
@@ -45,7 +89,7 @@ def _plan(command: Command, reports: list[Report], author_association: str | Non
     if name == CommandName.ask:
         if latest is None:
             return Outcome(reply=handlers.NO_REPORT)
-        return Outcome(reply=handlers.ask(latest, command.question or ""))
+        return Outcome(reply=handlers.ask(latest, command.question or "", previous_qa=previous_qa))
 
     if name == CommandName.recheck:
         if not permissions.can_recheck(author_association):

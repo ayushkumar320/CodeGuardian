@@ -165,11 +165,14 @@ def _route_no_provider(report: Report, question: str) -> Optional[str]:
     return None
 
 
-def ask(report: Report, question: str) -> str:
+def ask(report: Report, question: str, previous_qa: Optional[list[dict]] = None) -> str:
     """Free-form Q&A. The LLM may only describe what analyzers already found
     (strict rule #2). When no provider is configured, routes common question
     shapes to deterministic handlers (strict rule #3) and otherwise falls back
     to a useful message pointing at structured commands.
+
+    ``previous_qa`` carries prior question/answer pairs in this PR thread so a
+    follow-up has context (P1-1); ignored on the no-provider path.
     """
     if not question.strip():
         return "What would you like to know? Try `/codeguardian explain` for the standard summary."
@@ -177,7 +180,7 @@ def ask(report: Report, question: str) -> str:
         routed = _route_no_provider(report, question)
         if routed is not None:
             return routed
-    result = answer_question(report, question)
+    result = answer_question(report, question, previous_qa=previous_qa)
     # The result text already has the deterministic fallback when no key is
     # configured, so we just return it as-is.
     return result.text

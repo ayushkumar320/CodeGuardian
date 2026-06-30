@@ -345,3 +345,141 @@ def test_list_comment_reactions_parses(monkeypatch):
     client = GitHubClient(token="t")
     reactions = client.list_comment_reactions("o", "r", 99)
     assert report_mod.reaction_tally(reactions) == {"helpful": 1, "caught_bug": 1}
+
+
+# --- P1-1: conversation memory across asks ------------------------------------
+from codeguardian.commands.loop import load_recent_asks, reply_marker
+from codeguardian.commands import handlers as _handlers
+from codeguardian import providers
+
+
+class _FakeClient:
+    def __init__(self, comments):
+        self._comments = comments
+
+    def list_issue_comments(self, owner, repo, number):
+        return self._comments
+
+
+def test_load_recent_asks_pairs_question_with_reply():
+    comments = [
+        {"id": 1, "body": "/codeguardian what changed?"},
+        {"id": 2, "body": f"{reply_marker(1)}\nWe split board.py out."},
+        {"id": 3, "body": "/codeguardian expand on the second point"},
+        {"id": 4, "body": f"{reply_marker(3)}\nThe second point was about imports."},
+        {"id": 5, "body": "just a normal human comment, no mention"},
+    ]
+    pairs = load_recent_asks(_FakeClient(comments), "o", "r", 1)
+    assert len(pairs) == 2
+    assert pairs[0] == {"q": "what changed?", "a": "We split board.py out."}
+    assert pairs[1]["q"] == "expand on the second point"
+
+
+def test_load_recent_asks_ignores_non_ask_questions():
+    comments = [
+        {"id": 1, "body": "/codeguardian explain"},  # a known command, not ask
+        {"id": 2, "body": f"{reply_marker(1)}\nHere is the explanation."},
+    ]
+    assert load_recent_asks(_FakeClient(comments), "o", "r", 1) == []
+
+
+def test_load_recent_asks_caps_to_n():
+    comments = []
+    for i in range(1, 21, 2):
+        comments.append({"id": i, "body": f"/codeguardian question {i}"})
+        comments.append({"id": i + 1, "body": f"{reply_marker(i)}\nanswer {i}"})
+    pairs = load_recent_asks(_FakeClient(comments), "o", "r", 1, n=3)
+    assert len(pairs) == 3
+    assert pairs[-1]["q"] == "question 19"  # most recent kept
+
+
+def test_previous_qa_flows_into_prompt(monkeypatch):
+    monkeypatch.setenv("GROQ_API_KEY", "test-key")
+    monkeypatch.delenv("HF_TOKEN", raising=False)
+    captured = {}
+    monkeypatch.setattr(
+        providers, "_try_groq",
+        lambda prompt, env, **kw: (captured.setdefault("p", prompt), '{"summary": "ok"}')[1],
+    )
+    prev = [{"q": "what changed?", "a": "we split board.py"}]
+    _handlers.ask(_report(findings=[_finding()]), "expand on that", previous_qa=prev)
+    assert "previous_qa" in captured["p"]
+    assert "we split board.py" in captured["p"]
+
+
+# --- P1-4: import graph cache -------------------------------------------------
+import os as _os
+from codeguardian.analyzers import graph_cache
+from codeguardian.analyzers.imports import ImportGraph, build_import_graph
+
+
+def _write(root, rel, content):
+    p = _os.path.join(root, rel)
+    _os.makedirs(_os.path.dirname(p), exist_ok=True)
+    with open(p, "w") as fh:
+        fh.write(content)
+
+
+def test_graph_cache_roundtrip(tmp_path):
+    g = ImportGraph(forward={"a.py": {"b.py"}, "b.py": set()},
+                    reverse={"b.py": {"a.py"}, "a.py": set()})
+    path = str(tmp_path / "graph-cache.json")
+    assert graph_cache.save_graph(path, g)
+    loaded = graph_cache.load_graph(path)
+    assert loaded.forward == {"a.py": {"b.py"}, "b.py": set()}
+    # Reverse is derived, not stored, but must match.
+    assert loaded.reverse["b.py"] == {"a.py"}
+
+
+def test_graph_cache_invalidates_on_version_mismatch():
+    data = {"cache_version": 1, "analyzer_version": "not-the-real-version",
+            "built_at": __import__("time").time(), "forward": {"a.py": []}}
+    assert graph_cache.deserialize_graph(data) is None
+
+
+def test_graph_cache_invalidates_when_aged_out():
+    from codeguardian import ANALYZER_VERSION
+    old = __import__("time").time() - 100 * 86400
+    data = {"cache_version": 1, "analyzer_version": ANALYZER_VERSION,
+            "built_at": old, "forward": {"a.py": []}}
+    assert graph_cache.deserialize_graph(data, max_age_days=30) is None
+    # Fresh enough -> loads.
+    data["built_at"] = __import__("time").time()
+    assert graph_cache.deserialize_graph(data, max_age_days=30) is not None
+
+
+def test_patch_graph_matches_full_rebuild(tmp_path):
+    root = str(tmp_path)
+    _write(root, "pkg/a.py", "from .b import x\n")
+    _write(root, "pkg/b.py", "y = 1\n")
+    _write(root, "pkg/__init__.py", "")
+    full_before = build_import_graph(root)
+
+    # Now change a.py to import c instead of b, and add c.py.
+    _write(root, "pkg/a.py", "from .c import x\n")
+    _write(root, "pkg/c.py", "z = 1\n")
+    from codeguardian.models import DiffFile, FileStatus
+    changed = [
+        DiffFile(path="pkg/a.py", status=FileStatus.modified),
+        DiffFile(path="pkg/c.py", status=FileStatus.added),
+    ]
+    patched = graph_cache.patch_graph(full_before, root, changed)
+    full_after = build_import_graph(root)
+    # The patched edge a->c must match a true rebuild for the changed files.
+    assert patched.forward["pkg/a.py"] == full_after.forward["pkg/a.py"]
+    assert "pkg/a.py" in patched.reverse["pkg/c.py"]
+    assert "pkg/a.py" not in patched.reverse.get("pkg/b.py", set())
+
+
+def test_patch_graph_handles_removal(tmp_path):
+    root = str(tmp_path)
+    _write(root, "pkg/a.py", "from .b import x\n")
+    _write(root, "pkg/b.py", "y = 1\n")
+    _write(root, "pkg/__init__.py", "")
+    g = build_import_graph(root)
+    assert "pkg/a.py" in g.reverse["pkg/b.py"]
+    from codeguardian.models import DiffFile, FileStatus
+    # Remove a.py entirely.
+    graph_cache.patch_graph(g, root, [DiffFile(path="pkg/a.py", status=FileStatus.removed)])
+    assert "pkg/a.py" not in g.forward
+    assert "pkg/a.py" not in g.reverse.get("pkg/b.py", set())

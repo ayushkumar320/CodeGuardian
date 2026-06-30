@@ -100,7 +100,8 @@ def deterministic_summary(report: Report) -> str:
 
 
 def answer_question(
-    report: Report, question: str, env: Optional[dict] = None
+    report: Report, question: str, env: Optional[dict] = None,
+    previous_qa: Optional[list[dict]] = None,
 ) -> SummaryResult:
     """Answer a free-form question about the PR using the report as evidence.
 
@@ -108,11 +109,12 @@ def answer_question(
     the model may only describe what the analyzers already found, and the
     user's question is wrapped as untrusted input. If no provider is
     available, falls back to a deterministic notice that points the user at
-    a structured command.
+    a structured command. ``previous_qa`` supplies prior thread Q&A for
+    follow-up context (P1-1).
     """
     env = env or os.environ
     provider = select_provider(env)
-    prompt = _build_qa_prompt(report, question)
+    prompt = _build_qa_prompt(report, question, previous_qa)
 
     if provider == Provider.groq:
         text = validate_summary(_try_groq(prompt, env, max_tokens=1200))
@@ -134,7 +136,8 @@ def answer_question(
 _MAX_QA_PROMPT_CHARS = 18000
 
 
-def _build_qa_prompt(report: Report, question: str) -> str:
+def _build_qa_prompt(report: Report, question: str,
+                     previous_qa: Optional[list[dict]] = None) -> str:
     # 1. Structured findings — what the deterministic analyzers concluded.
     # Bias ordering when the question mentions a category alias so the model
     # sees the relevant findings first (P0-3).
@@ -214,6 +217,10 @@ def _build_qa_prompt(report: Report, question: str) -> str:
         facts.pop("findings_relevant_to_question")
         facts.pop("findings_other")
         facts["findings"] = findings
+    # Prior Q&A in this PR thread, so a follow-up has an anchor (P1-1). Bounded
+    # to the last few pairs; the whole facts blob is wrapped untrusted below.
+    if previous_qa:
+        facts["previous_qa"] = previous_qa[-5:]
     system = (
         "You are CodeGuardian, answering a developer's question about a pull "
         "request. You receive two kinds of evidence: structured FINDINGS from "

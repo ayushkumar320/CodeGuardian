@@ -159,6 +159,33 @@ class GitHubClient:
         resp.raise_for_status()
         return resp.json().get("id")
 
+    def list_issue_comments(self, owner: str, repo: str, number: int) -> list[dict]:
+        """All comments on a PR thread, oldest first (GitHub's default order).
+        Best-effort: returns [] on any error so a follow-up-context fetch never
+        breaks the conversation loop (P1-1)."""
+        if not self.enabled:
+            return []
+        url = f"{self.api_url}/repos/{owner}/{repo}/issues/{number}/comments"
+        out: list[dict] = []
+        page = 1
+        try:
+            while True:
+                resp = http_request("GET",
+                    url, headers=self._headers(),
+                    params={"per_page": 100, "page": page}, timeout=_TIMEOUT,
+                )
+                resp.raise_for_status()
+                items = resp.json()
+                if not items:
+                    break
+                out.extend(items)
+                if len(items) < 100:
+                    break
+                page += 1
+        except (requests.RequestException, ValueError):
+            return []
+        return out
+
     def already_replied(self, owner: str, repo: str, number: int, marker: str) -> bool:
         """Idempotency: true if a prior reply carrying ``marker`` already exists."""
         if not self.enabled:
