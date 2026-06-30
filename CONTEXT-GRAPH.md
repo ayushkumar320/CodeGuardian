@@ -24,7 +24,6 @@ the one entry a node points to.
 | SUP  | [SUPPORT.md](SUPPORT.md) | Triage + beta FP/FN bookkeeping |
 | SEC  | [SECURITY.md](SECURITY.md), [doc/THREAT-MODEL.md](doc/THREAT-MODEL.md) | Security policy + threat model |
 | INST | [doc/INSTALL.md](doc/INSTALL.md), [doc/TROUBLESHOOTING.md](doc/TROUBLESHOOTING.md), [doc/RELEASING.md](doc/RELEASING.md), [doc/TESTING.md](doc/TESTING.md) | User-facing operating docs |
-| ARCH | [doc/build/archive/](doc/build/archive/) | Historical build-phase docs (0–12, delivered) |
 
 ## Concept → file (code map)
 

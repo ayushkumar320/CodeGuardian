@@ -18,10 +18,9 @@ rather than silently breaking it.
 
 1. **Code + IMPROVEMENT-PLAN are the source of truth.** Do not invent
    architecture. The current code wins for delivered behavior; the
-   `doc/IMPROVEMENT-PLAN.md` queue defines what's next. Archived phase docs
-   under `doc/build/archive/` explain *why* the MVP is shaped as it is, and
-   both override `doc/CodeGuardian-AI-Blueprint.md` when the blueprint
-   describes a larger deferred end state.
+   `doc/IMPROVEMENT-PLAN.md` queue defines what's next. Both override
+   `doc/CodeGuardian-AI-Blueprint.md` when the blueprint describes a larger
+   deferred end state.
 2. **Deterministic-first, always.** Static analysis / graph / scoring produce
    evidence; the LLM only synthesizes. A model must **never** create a finding
    with no analyzer evidence behind it.
@@ -84,8 +83,6 @@ inventing new scope.
   way it does).
 - [doc/GitHub-PR-User-Flowmap.md](doc/GitHub-PR-User-Flowmap.md) — end-to-end
   PR UX flow.
-- [doc/build/archive/](doc/build/archive/) — the historical build-phase docs
-  (0–12, all delivered).
 
 If the blueprint and current code conflict, **the code (and IMPROVEMENT-PLAN)
 wins** — the blueprint describes a larger deferred end state.

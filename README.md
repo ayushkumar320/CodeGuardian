@@ -189,7 +189,6 @@ Out of scope:
 - [doc/POST-V1-ROADMAP.md](doc/POST-V1-ROADMAP.md) — what v1.0 is deliberately *not* doing
 - [doc/GA-CHECKLIST.md](doc/GA-CHECKLIST.md) — v1.0 cut sequence
 - [doc/CodeGuardian-AI-Blueprint.md](doc/CodeGuardian-AI-Blueprint.md) — original long-term blueprint (historical)
-- [doc/build/archive/](doc/build/archive/) — historical phase build docs (0–12, delivered)
 
 ## Current Status
 
