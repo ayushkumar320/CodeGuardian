@@ -52,6 +52,24 @@ def test_parse_pr_context_marks_fork():
     assert pr.head_repo_clone_url.endswith("contrib/repo.git")
 
 
+def test_parse_pr_context_captures_body_redacted_and_capped():
+    big = "Implements session TTL. " + ("x" * 5000)
+    event = {
+        "pull_request": {
+            "number": 8,
+            "title": "Add session TTL",
+            "body": big + " token=ghp_" + "a" * 36,
+            "base": {"sha": "base", "repo": {"full_name": "org/repo"}},
+            "head": {"sha": "head", "ref": "f", "repo": {"full_name": "org/repo"}},
+        },
+    }
+    pr = parse_pr_context(event, {"GITHUB_REPOSITORY": "org/repo", "GITHUB_SHA": "head"})
+    assert pr is not None
+    assert pr.body.startswith("Implements session TTL.")
+    assert len(pr.body) <= 2000
+    assert "ghp_" + "a" * 36 not in pr.body  # secret redacted
+
+
 def test_publish_check_updates_existing(monkeypatch):
     calls: list[tuple[str, str]] = []
 

@@ -445,4 +445,12 @@ above list — pinning rationale so we don't accidentally pick them up later:
 When picking items off this list, record one line here so future-us knows
 why a P1 jumped queue over a different P1:
 
-- _(no entries yet — first pick logged the day we start)_
+- 2026-06-30 — Shipped P0-1, P0-2, P0-3 as a single batch. All three touch
+  `providers._build_qa_prompt` and the `facts` dict it builds, so bundling
+  avoided three near-identical PRs against the same function. P0-1 added
+  `body` to `PrContext` + redacted/capped parse in `github/events.py`;
+  P0-2 surfaces `report.historical_context`; P0-3 uses
+  `commands.parser._CATEGORY_ALIASES` to split findings into
+  `findings_relevant_to_question` vs `findings_other` when the question
+  names a category. Regression tests added in `tests/test_phase12_ask_mode.py`
+  and `tests/test_phase7_live_api.py`.

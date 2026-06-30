@@ -86,6 +86,7 @@ class PrContext(BaseModel):
     base_sha: str
     head_sha: str
     title: str = ""
+    body: str = ""
     installation_id: Optional[int] = None
     is_fork: bool = False
     head_ref: str = ""

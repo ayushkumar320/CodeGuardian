@@ -136,8 +136,18 @@ _MAX_QA_PROMPT_CHARS = 18000
 
 def _build_qa_prompt(report: Report, question: str) -> str:
     # 1. Structured findings — what the deterministic analyzers concluded.
-    findings = [
-        {
+    # Bias ordering when the question mentions a category alias so the model
+    # sees the relevant findings first (P0-3).
+    from .commands.parser import _CATEGORY_ALIASES
+
+    q_low = question.lower()
+    asked_category = next(
+        (cat for alias, cat in _CATEGORY_ALIASES.items() if alias in q_low),
+        None,
+    )
+
+    def _finding_dict(f):
+        return {
             "id": f.id,
             "category": f.category.value,
             "severity": f.severity.value,
@@ -145,8 +155,15 @@ def _build_qa_prompt(report: Report, question: str) -> str:
             "evidence_files": f.evidence_files[:5],
             "action": f.recommended_actions[:1],
         }
-        for f in report.active_findings()
-    ]
+
+    active = report.active_findings()
+    if asked_category:
+        relevant = [_finding_dict(f) for f in active if f.category.value == asked_category]
+        other = [_finding_dict(f) for f in active if f.category.value != asked_category]
+    else:
+        relevant = [_finding_dict(f) for f in active]
+        other = []
+    findings = relevant + other
 
     # 2. The actual diff — what the developer is asking about. Without this the
     # model can only restate finding categories in vague words. With it, the
@@ -179,10 +196,19 @@ def _build_qa_prompt(report: Report, question: str) -> str:
         "level": report.risk.level.value,
         "blocking": report.risk.blocking,
         "affected_areas": report.affected_areas,
-        "findings": findings,
+        "pr_title": report.pr.title,
+        "pr_description": report.pr.body,
+        "historical_context": report.historical_context,
+        "findings_relevant_to_question": relevant if asked_category else findings,
+        "findings_other": other,
         "changed_files": changed,
         "notes": report.notes,
     }
+    if not asked_category:
+        # Single key when no category bias — keep prompt simpler.
+        facts.pop("findings_relevant_to_question")
+        facts.pop("findings_other")
+        facts["findings"] = findings
     system = (
         "You are CodeGuardian, answering a developer's question about a pull "
         "request. You receive two kinds of evidence: structured FINDINGS from "
@@ -210,6 +236,9 @@ def _build_qa_prompt(report: Report, question: str) -> str:
         "  - Concrete things the reviewer should look at — e.g. 'verify "
         "    pkg/scoreboard.py callers handle the renamed `record()` return'.\n\n"
         "Strict rules:\n"
+        "- If pr_description states the developer's intent, use it to frame "
+        "  the answer — but never claim the PR does something the diff "
+        "  doesn't actually show.\n"
         "- ONLY describe what's visible in the evidence. Never invent files, "
         "  functions, behavior, or findings the evidence doesn't show. If a "
         "  symbol isn't in the patch excerpt, don't claim it exists.\n"

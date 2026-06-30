@@ -166,3 +166,89 @@ def test_ask_injection_attempt_does_not_change_score_or_findings(monkeypatch):
     )
     assert r.risk.score == score_before  # unchanged
     assert r.findings == findings_before  # unchanged
+
+
+# --- P0-1 / P0-2 / P0-3 -------------------------------------------------------
+def test_ask_prompt_includes_pr_title_and_description(monkeypatch):
+    """P0-1: developer's stated intent (PR body) must reach the model so it can
+    frame answers around what the PR is *for*, not just what it literally does."""
+    monkeypatch.setenv("GROQ_API_KEY", "test-key")
+    monkeypatch.delenv("HF_TOKEN", raising=False)
+    captured = {}
+    monkeypatch.setattr(
+        providers, "_try_groq",
+        lambda prompt, env, **kw: (captured.setdefault("p", prompt), json.dumps({"summary": "ok"}))[1],
+    )
+    r = _report()
+    r.pr.title = "Add session TTL contract"
+    r.pr.body = "Implements the 1-hour session expiry agreed in #42."
+    handlers.ask(r, "what changed?")
+    assert "Add session TTL contract" in captured["p"]
+    assert "1-hour session expiry" in captured["p"]
+
+
+def test_ask_prompt_includes_historical_context(monkeypatch):
+    """P0-2: memory hits from Phase-5 historical agent must reach the model so
+    'have we made changes like this before?' stops failing silently."""
+    monkeypatch.setenv("GROQ_API_KEY", "test-key")
+    monkeypatch.delenv("HF_TOKEN", raising=False)
+    captured = {}
+    monkeypatch.setattr(
+        providers, "_try_groq",
+        lambda prompt, env, **kw: (captured.setdefault("p", prompt), json.dumps({"summary": "ok"}))[1],
+    )
+    r = _report()
+    r.historical_context = ["PR #88 also touched pkg/board.py and broke pkg/game.py."]
+    handlers.ask(r, "have we touched this before?")
+    assert "PR #88" in captured["p"]
+    assert "broke pkg/game.py" in captured["p"]
+
+
+def test_ask_prompt_pre_filters_findings_by_category(monkeypatch):
+    """P0-3: when the question mentions a category, the prompt splits findings
+    into 'relevant' and 'other' so the model is biased toward the right subset."""
+    monkeypatch.setenv("GROQ_API_KEY", "test-key")
+    monkeypatch.delenv("HF_TOKEN", raising=False)
+    captured = {}
+    monkeypatch.setattr(
+        providers, "_try_groq",
+        lambda prompt, env, **kw: (captured.setdefault("p", prompt), json.dumps({"summary": "ok"}))[1],
+    )
+    r = _report()
+    r.findings.append(
+        Finding(
+            id="CG-DB-001", category=Category.database,
+            severity=Severity.high, confidence=0.8,
+            title="Destructive migration on users table",
+            summary="DROP COLUMN without backfill.",
+            evidence_files=["prisma/migrations/x.sql"],
+            recommended_actions=["Add backfill"],
+            blocking=Blocking(),
+        )
+    )
+    handlers.ask(r, "which database changes are risky?")
+    p = captured["p"]
+    assert "findings_relevant_to_question" in p
+    assert "findings_other" in p
+    # Relevant block must come before other in the serialized prompt.
+    assert p.index("findings_relevant_to_question") < p.index("findings_other")
+    # Within the EVIDENCE block, the DB finding lands in the relevant bucket
+    # (before findings_other) and the DEP finding lands after.
+    evidence = p[p.index("EVIDENCE:"):]
+    assert evidence.index("CG-DB-001") < evidence.index("findings_other")
+    assert evidence.index("findings_other") < evidence.index("CG-DEP-001")
+
+
+def test_ask_prompt_no_category_mentioned_keeps_single_findings_block(monkeypatch):
+    """When the question has no category alias, prompt stays in the simple
+    single-block shape — no need to surface the bias machinery."""
+    monkeypatch.setenv("GROQ_API_KEY", "test-key")
+    monkeypatch.delenv("HF_TOKEN", raising=False)
+    captured = {}
+    monkeypatch.setattr(
+        providers, "_try_groq",
+        lambda prompt, env, **kw: (captured.setdefault("p", prompt), json.dumps({"summary": "ok"}))[1],
+    )
+    handlers.ask(_report(), "what changed?")
+    assert "findings_relevant_to_question" not in captured["p"]
+    assert '"findings"' in captured["p"]

@@ -8,6 +8,9 @@ from dataclasses import dataclass
 from typing import Optional
 
 from ..models import PrContext
+from ..security import safe_output
+
+_MAX_BODY_CHARS = 2000
 
 COMMENT_EVENTS = {"issue_comment", "pull_request_review_comment"}
 
@@ -62,6 +65,7 @@ def parse_pr_context(event: dict, env: Optional[dict] = None) -> Optional[PrCont
         base_sha=base.get("sha", ""),
         head_sha=head.get("sha", env.get("GITHUB_SHA", "")),
         title=pr.get("title", ""),
+        body=safe_output((pr.get("body") or "")[:_MAX_BODY_CHARS]),
         installation_id=installation,
         is_fork=bool(head_full and base_full and head_full != base_full),
         head_ref=head.get("ref", ""),
