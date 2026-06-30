@@ -231,3 +231,117 @@ def test_show_no_match_is_explicit():
 
 def test_show_without_target_shows_usage():
     assert "Usage:" in handlers.show(_report_with_diff(), None)
+
+
+# --- P1-2: inline annotations -------------------------------------------------
+from codeguardian.policy import NoiseBudget
+from codeguardian.pr.diff import first_added_line
+
+_ANNOTATABLE_HUNK = "@@ -0,0 +12,2 @@\n+def empty_board():\n+    return []\n"
+
+
+def _annotatable_report():
+    f = _finding(fid="CG-ARCH-001", category=Category.architecture,
+                 sev=Severity.high, conf=0.8, evidence=["pkg/board.py"])
+    r = _report(findings=[f])
+    r.diff_summary = [DiffSummaryFile(
+        path="pkg/board.py", status=FileStatus.added, additions=2, deletions=0,
+        relevant_hunks=[_ANNOTATABLE_HUNK],
+    )]
+    return r
+
+
+def test_first_added_line_resolves_new_file_line():
+    assert first_added_line(_ANNOTATABLE_HUNK) == 12
+
+
+def test_first_added_line_none_without_addition():
+    assert first_added_line("@@ -1,2 +1,1 @@\n-removed only\n") is None
+
+
+def test_annotations_opt_in_required():
+    r = _annotatable_report()
+    assert report_mod.annotations_from_report(r, Policy()) == []  # default off
+
+
+def test_annotations_built_for_qualifying_finding():
+    r = _annotatable_report()
+    pol = Policy(noise=NoiseBudget(allow_inline_annotations=True))
+    anns = report_mod.annotations_from_report(r, pol)
+    assert len(anns) == 1
+    a = anns[0]
+    assert a["path"] == "pkg/board.py"
+    assert a["start_line"] == 12
+    assert a["annotation_level"] == "failure"  # high severity
+    assert "CG-ARCH-001" in a["title"]
+
+
+def test_annotations_skip_low_confidence_and_multi_file():
+    pol = Policy(noise=NoiseBudget(allow_inline_annotations=True))
+    # low confidence
+    r1 = _annotatable_report()
+    r1.findings[0].confidence = 0.5
+    assert report_mod.annotations_from_report(r1, pol) == []
+    # more than one evidence file -> not localized
+    r2 = _annotatable_report()
+    r2.findings[0].evidence_files = ["pkg/board.py", "pkg/game.py"]
+    assert report_mod.annotations_from_report(r2, pol) == []
+
+
+def test_publish_check_sends_annotations(monkeypatch):
+    from codeguardian.github.client import GitHubClient
+    captured = {}
+
+    class _Resp:
+        status_code = 200
+        headers = {}
+        def raise_for_status(self): return None
+        def json(self): return {"id": 1}
+
+    def fake_req(method, url, headers=None, params=None, json=None, timeout=None):
+        if method == "GET":
+            return type("R", (), {"raise_for_status": lambda s: None,
+                                  "json": lambda s: {"check_runs": []}, "headers": {},
+                                  "status_code": 200})()
+        captured["body"] = json
+        return _Resp()
+
+    monkeypatch.setattr("codeguardian.http.requests.request", fake_req)
+    client = GitHubClient(token="t")
+    anns = [{"path": "a.py", "start_line": 1, "end_line": 1,
+             "annotation_level": "warning", "title": "t", "message": "m"}]
+    client.publish_check("o", "r", "sha", "neutral", "title", "summary", annotations=anns)
+    assert captured["body"]["output"]["annotations"][0]["path"] == "a.py"
+
+
+# --- P1-3: reaction feedback --------------------------------------------------
+def test_feedback_footer_in_sticky_comment():
+    r = _report(findings=[_finding()])
+    body = report_mod.sticky_comment(r, Policy(), "narrative")
+    assert "React on this comment" in body
+
+
+def test_reaction_tally_buckets_reactions():
+    reactions = [
+        {"content": "+1"}, {"content": "+1"}, {"content": "-1"},
+        {"content": "confused"}, {"content": "hooray"}, {"content": "rocket"},
+    ]
+    tally = report_mod.reaction_tally(reactions)
+    assert tally == {"helpful": 2, "not_useful": 1, "confusing": 1, "caught_bug": 1}
+
+
+def test_list_comment_reactions_parses(monkeypatch):
+    from codeguardian.github.client import GitHubClient
+
+    def fake_get(method, url, headers=None, params=None, timeout=None):
+        class R:
+            def raise_for_status(self): return None
+            def json(self): return [{"content": "+1"}, {"content": "hooray"}]
+            headers = {}
+            status_code = 200
+        return R()
+
+    monkeypatch.setattr("codeguardian.http.requests.request", fake_get)
+    client = GitHubClient(token="t")
+    reactions = client.list_comment_reactions("o", "r", 99)
+    assert report_mod.reaction_tally(reactions) == {"helpful": 1, "caught_bug": 1}

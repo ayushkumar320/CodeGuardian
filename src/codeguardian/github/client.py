@@ -64,15 +64,21 @@ class GitHubClient:
         conclusion: str,
         title: str,
         summary: str,
+        annotations: Optional[list[dict]] = None,
     ) -> Optional[int]:
         if not self.enabled:
             return None
+        output = {"title": _scrub(title), "summary": _scrub(summary)[:65000]}
+        if annotations:
+            # GitHub accepts up to 50 annotations per request; scrub each message
+            # since patch-derived text can contain anything (defense in depth).
+            output["annotations"] = [self._scrub_annotation(a) for a in annotations[:50]]
         body = {
             "name": CHECK_NAME,
             "head_sha": head_sha,
             "status": "completed",
             "conclusion": conclusion,
-            "output": {"title": _scrub(title), "summary": _scrub(summary)[:65000]},
+            "output": output,
         }
         existing = self._find_check_run(owner, repo, head_sha)
         if existing is not None:
@@ -83,6 +89,14 @@ class GitHubClient:
             resp = http_request("POST", url, headers=self._headers(), json=body, timeout=_TIMEOUT)
         resp.raise_for_status()
         return resp.json().get("id")
+
+    @staticmethod
+    def _scrub_annotation(a: dict) -> dict:
+        scrubbed = dict(a)
+        for key in ("title", "message"):
+            if scrubbed.get(key):
+                scrubbed[key] = _scrub(scrubbed[key])
+        return scrubbed
 
     def _find_check_run(self, owner: str, repo: str, head_sha: str) -> Optional[int]:
         url = f"{self.api_url}/repos/{owner}/{repo}/commits/{head_sha}/check-runs"
@@ -163,6 +177,33 @@ class GitHubClient:
             if len(items) < 100:
                 return False
             page += 1
+
+    # --- Reactions (feedback signal, P1-3) --------------------------------
+    def list_comment_reactions(self, owner: str, repo: str, comment_id: int) -> list[dict]:
+        """Read reactions on an issue comment (the sticky comment). Best-effort:
+        returns [] on any error so a feedback-tally step never breaks a run."""
+        if not self.enabled:
+            return []
+        url = f"{self.api_url}/repos/{owner}/{repo}/issues/comments/{comment_id}/reactions"
+        out: list[dict] = []
+        page = 1
+        try:
+            while True:
+                resp = http_request("GET",
+                    url, headers=self._headers(),
+                    params={"per_page": 100, "page": page}, timeout=_TIMEOUT,
+                )
+                resp.raise_for_status()
+                items = resp.json()
+                if not items:
+                    break
+                out.extend(items)
+                if len(items) < 100:
+                    break
+                page += 1
+        except (requests.RequestException, ValueError):
+            return []
+        return out
 
     # --- Pull request info ------------------------------------------------
     def get_pull(self, owner: str, repo: str, number: int) -> Optional[dict]:

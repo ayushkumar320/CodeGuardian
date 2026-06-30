@@ -31,6 +31,7 @@ from .models import PrContext, Provider, Report, RiskLevel, Suppression
 from .policy import Policy
 from .providers import deterministic_summary
 from .report import (
+    annotations_from_report,
     check_conclusion,
     check_summary,
     check_title,
@@ -149,6 +150,7 @@ def _analyze_and_publish(repo_root: str, pr: PrContext, policy: Policy) -> Repor
         client.publish_check(
             pr.owner, pr.repo, pr.head_sha, check_conclusion(report), title,
             check_summary(report, policy),
+            annotations=annotations_from_report(report, policy),
         )
         if _should_comment(report, policy):
             client.upsert_sticky_comment(

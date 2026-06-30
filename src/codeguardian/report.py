@@ -8,8 +8,9 @@
 from __future__ import annotations
 
 from . import SUMMARY_ANCHOR
-from .models import Mode, Provider, Report, RiskLevel
+from .models import Mode, Provider, Report, RiskLevel, Severity
 from .policy import Policy
+from .pr.diff import first_added_line
 
 _LEVEL_LABEL = {
     RiskLevel.low: "Low",
@@ -200,8 +201,91 @@ def sticky_comment(report: Report, policy: Policy, narrative: str) -> str:
         "---",
         "Ask in this PR: `/codeguardian why blocked` · `tests` · `explain`",
         f"_{report.mode.value} mode · {report.provider.value} · full report attached as a run artifact._",
+        "",
+        FEEDBACK_FOOTER,
     ]
     return "\n".join(lines)
+
+
+# One-click feedback (P1-3): a reaction on the sticky comment is a zero-effort
+# signal compared to filing a false-positive issue.
+FEEDBACK_FOOTER = (
+    "_Was this useful? React on this comment: 👍 helpful · 👎 not useful · "
+    "😕 confusing · 🎯 caught a real bug._"
+)
+
+# GitHub reaction "content" values mapped to the feedback meaning we render.
+_REACTION_MEANING = {
+    "+1": "helpful",
+    "-1": "not_useful",
+    "confused": "confusing",
+    "hooray": "caught_bug",
+    "eyes": "caught_bug",
+}
+
+
+def reaction_tally(reactions: list[dict]) -> dict[str, int]:
+    """Aggregate a sticky comment's reactions into feedback buckets (P1-3).
+    Unrecognized reaction types are ignored. Pure — the caller decides where
+    the tally is persisted (e.g. the memory branch)."""
+    out: dict[str, int] = {}
+    for r in reactions:
+        meaning = _REACTION_MEANING.get(r.get("content", ""))
+        if meaning:
+            out[meaning] = out.get(meaning, 0) + 1
+    return out
+
+
+# --- Inline annotations (P1-2) ------------------------------------------------
+# Bar for putting a finding *on the line*: high-confidence + localized only
+# (strict rule #5). GitHub caps annotations at 50 per check-run request.
+_ANNOTATION_MIN_CONFIDENCE = 0.7
+_ANNOTATION_MAX = 50
+_ANNOTATION_LEVEL = {
+    Severity.low: "notice",
+    Severity.medium: "warning",
+    Severity.high: "failure",
+    Severity.critical: "failure",
+}
+
+
+def annotations_from_report(report: Report, policy: Policy) -> list[dict]:
+    """Build GitHub check annotations for the small set of findings that are
+    confident *and* localized enough to sit on a line (P1-2). Opt-in via
+    ``policy.noise.allow_inline_annotations``. Only findings with:
+      - severity >= medium, AND
+      - confidence >= 0.7, AND
+      - exactly one evidence file that resolves to a changed line
+    qualify; everything else stays in the sticky comment to keep the PR quiet.
+    """
+    if not policy.noise.allow_inline_annotations:
+        return []
+    patch_by_path = {d.path: d for d in report.diff_summary}
+    out: list[dict] = []
+    for f in report.active_findings():
+        if f.severity == Severity.low or f.confidence < _ANNOTATION_MIN_CONFIDENCE:
+            continue
+        if len(f.evidence_files) != 1:
+            continue
+        path = f.evidence_files[0]
+        d = patch_by_path.get(path)
+        if d is None:
+            continue
+        patch = "\n".join(d.relevant_hunks) or d.patch_excerpt
+        line = first_added_line(patch)
+        if line is None:
+            continue
+        out.append({
+            "path": path,
+            "start_line": line,
+            "end_line": line,
+            "annotation_level": _ANNOTATION_LEVEL[f.severity],
+            "title": f"{f.id}: {f.title}"[:255],
+            "message": ((f.recommended_actions or [f.summary])[0] or f.title)[:640],
+        })
+        if len(out) >= _ANNOTATION_MAX:
+            break
+    return out
 
 
 def markdown_artifact(report: Report, policy: Policy, narrative: str) -> str:

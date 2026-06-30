@@ -109,6 +109,33 @@ def split_hunks(patch: str) -> tuple[str, list[str]]:
     return header, hunks
 
 
+_HUNK_HEADER_RE = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@")
+
+
+def first_added_line(patch: Optional[str]) -> Optional[int]:
+    """Resolve the new-file line number of the first added (``+``) line in a
+    patch, for placing a check annotation. Returns None when the patch has no
+    addition we can anchor to (pure deletions, no hunk, malformed)."""
+    if not patch:
+        return None
+    _, hunks = split_hunks(patch)
+    for hunk in hunks:
+        lines = hunk.splitlines()
+        m = _HUNK_HEADER_RE.match(lines[0]) if lines else None
+        if not m:
+            continue
+        new_line = int(m.group(1))
+        for body in lines[1:]:
+            if body.startswith("+++"):
+                continue
+            if body.startswith("+"):
+                return new_line
+            if body.startswith("-"):
+                continue  # removed lines don't advance the new-file counter
+            new_line += 1  # context line
+    return None
+
+
 def _path_from_block(block: str) -> Optional[str]:
     lines = block.splitlines()
     for line in lines:
