@@ -1,4 +1,4 @@
-from codeguardian.commands import permissions
+from codeguardian.commands import handlers, permissions
 from codeguardian.commands.loop import plan, reply_marker
 from codeguardian.commands.parser import CommandName, parse
 from codeguardian.models import (
@@ -46,6 +46,26 @@ def test_parse_basic_commands():
 
 def test_parse_no_mention():
     assert parse("just a normal comment") is None
+
+
+def test_parse_flags_legacy_at_mention():
+    """P0-5: the deprecated `@codeguardian` form is flagged; the slash form is not."""
+    assert parse("@codeguardian explain").legacy_mention is True
+    assert parse("hey @CodeGuardian tests").legacy_mention is True
+    assert parse("/codeguardian explain").legacy_mention is False
+    assert parse("/codeguardian").legacy_mention is False  # bare slash -> help
+
+
+def test_legacy_mention_prepends_warning_in_reply():
+    """The plan reply for an `@`-triggered command carries the nudge once, on top."""
+    out = plan(parse("@codeguardian help"), [], "NONE")
+    assert out.reply.startswith(handlers.LEGACY_MENTION_WARNING)
+    assert "explain" in out.reply  # original reply still present below the nudge
+
+
+def test_slash_mention_has_no_warning():
+    out = plan(parse("/codeguardian help"), [], "NONE")
+    assert handlers.LEGACY_MENTION_WARNING not in out.reply
 
 
 def test_parse_unknown_falls_through_to_ask():

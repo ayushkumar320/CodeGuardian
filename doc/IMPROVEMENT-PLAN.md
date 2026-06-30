@@ -464,3 +464,10 @@ why a P1 jumped queue over a different P1:
   "needs a model" fallback. 5 tests in `tests/test_phase12_ask_mode.py`.
   Picked over P0-5 because it directly serves strict rule #3 (zero-key path
   stays useful) and shared the warm ask-path context from the P0-1/2/3 batch.
+- 2026-06-30 — Shipped P0-5 (`@codeguardian` sunset warning). `parser.parse`
+  now records `Command.legacy_mention` from whether the matched trigger
+  started with `@` vs `/`; `loop.plan` prepends a one-line nudge
+  (`handlers.LEGACY_MENTION_WARNING`) above any reply for the legacy form,
+  without breaking it. 3 tests in `tests/test_phase3_commands.py`. With this
+  the P0 tier is fully delivered except P0-6 (installer, tracked as a
+  separate `gh`-extension repo).

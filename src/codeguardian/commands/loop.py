@@ -27,6 +27,14 @@ class Outcome:
 
 
 def plan(command: Command, reports: list[Report], author_association: str | None) -> Outcome:
+    outcome = _plan(command, reports, author_association)
+    # Prepend the legacy-mention nudge once, above whatever reply we produced.
+    if command.legacy_mention and outcome.reply:
+        outcome.reply = f"{handlers.LEGACY_MENTION_WARNING}\n\n{outcome.reply}"
+    return outcome
+
+
+def _plan(command: Command, reports: list[Report], author_association: str | None) -> Outcome:
     latest = reports[0] if reports else None
     previous = reports[1] if len(reports) > 1 else None
     name = command.name

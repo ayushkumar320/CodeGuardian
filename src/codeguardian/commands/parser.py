@@ -58,6 +58,7 @@ class Command:
     category: Optional[str] = None  # for `explain <category> risk`
     question: Optional[str] = None  # free-form text for `ask`
     raw: str = ""
+    legacy_mention: bool = False  # triggered via the deprecated `@codeguardian` form
 
     @property
     def is_read_only(self) -> bool:
@@ -77,8 +78,20 @@ _MAX_QUESTION_CHARS = 1500  # bound prompt-injection volume on free-form input.
 
 
 def parse(body: str) -> Optional[Command]:
-    if not body or not _MENTION_RE.search(body):
+    if not body:
         return None
+    match = _MENTION_RE.search(body)
+    if not match:
+        return None
+    command = _parse(body)
+    if command is not None:
+        # The deprecated `@codeguardian` form auto-links to a real GitHub user;
+        # flag it so the loop can nudge toward the slash form (P0-5).
+        command.legacy_mention = match.group(0).startswith("@")
+    return command
+
+
+def _parse(body: str) -> Optional[Command]:
     # Take the text after the first @codeguardian mention.
     after = _MENTION_RE.split(body, maxsplit=1)[1].strip()
     # Bare `/codeguardian` (nothing after) -> help. Anything else flows through.

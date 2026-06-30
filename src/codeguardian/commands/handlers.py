@@ -31,6 +31,13 @@ NO_REPORT = (
     "`/codeguardian recheck` to generate one."
 )
 
+# Nudge shown above replies triggered via the deprecated `@codeguardian` form,
+# which auto-links to an unrelated GitHub user and pings them (P0-5).
+LEGACY_MENTION_WARNING = (
+    "> ⚠️ Tip: use `/codeguardian` instead of `@codeguardian`. "
+    "The `@` form pings an unrelated GitHub user."
+)
+
 
 def _level(report: Report) -> str:
     return f"{report.risk.score}/10 {report.risk.level.value}"
