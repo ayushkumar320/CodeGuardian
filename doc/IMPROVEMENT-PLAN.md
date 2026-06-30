@@ -471,3 +471,33 @@ why a P1 jumped queue over a different P1:
   without breaking it. 3 tests in `tests/test_phase3_commands.py`. With this
   the P0 tier is fully delivered except P0-6 (installer, tracked as a
   separate `gh`-extension repo).
+- 2026-06-30 — Cleared the full P1/P2 backlog in four batches (49 new tests
+  in `tests/test_improvement_plan.py`):
+  - **Batch A** (scoring/report cluster): P1-5 `report.check_title`
+    (score+verdict+narrative snippet); P2-6 `calibrate.calibrate_confidence`
+    (−0.2 conf for whitespace/comment-only evidence edits, in
+    `risk_scoring_agent`); P2-5 `Report.provider_usage` + `report.usage_footer`
+    (billable-provider tally on the check).
+  - **Batch B**: P1-6 `DiffSummaryFile.relevant_hunks` + `pr.diff.split_hunks`
+    (whole hunks for finding-flagged files, preferred by the ask prompt);
+    P2-4 `/codeguardian show <path-or-symbol>` (`handlers.show`, parser
+    `CommandName.show` + `Command.target`).
+  - **Batch C**: P1-2 `report.annotations_from_report` +
+    `pr.diff.first_added_line` + `publish_check(annotations=…)` (opt-in via
+    `policy.noise.allow_inline_annotations`, high-confidence+localized only);
+    P1-3 sticky `FEEDBACK_FOOTER` + `report.reaction_tally` +
+    `client.list_comment_reactions`.
+  - **Batch D**: P1-1 `loop.load_recent_asks` + `previous_qa` in the ask
+    prompt (`client.list_issue_comments`); P1-4 `analyzers/graph_cache.py`
+    (sidecar persist + incremental `patch_graph`, env
+    `CODEGUARDIAN_GRAPH_CACHE`, `ANALYZER_VERSION`-pinned invalidation).
+  - **Languages/schema (first increments, low-FP, removal-only)**: P2-2 Go
+    imports+tests in `analyzers/imports.py` + `analyzers/tests.py` (Go arch
+    comes free via the shared graph); P2-1 `analyzers/pytypes.py` (Python
+    public def/class removal/rename, the Python analog of `types.py`); P2-3
+    `analyzers/schema.py` (OpenAPI path/operation + GraphQL type/field
+    removals). **Deferred deeper work** (greenlight individually): P2-1's
+    AST-level Protocol/TypedDict/dataclass/ORM/route analyzers and P2-3's
+    full structural `oasdiff`-style narrowing/required-param diff — both are
+    multi-day and FP-prone, so they were scoped to the unambiguous-removal
+    slice now rather than shipping noise (core "fewer-but-right" principle).

@@ -22,6 +22,8 @@ from ..analyzers import architecture as arch_analyzer
 from ..analyzers import database as db_analyzer
 from ..analyzers import imports as imports_analyzer
 from ..analyzers import pr_shape as pr_shape_analyzer
+from ..analyzers import pytypes as pytypes_analyzer
+from ..analyzers import schema as schema_analyzer
 from ..analyzers import tests as tests_analyzer
 from ..analyzers import types as types_analyzer
 from ..calibrate import calibrate_confidence
@@ -80,6 +82,10 @@ def types_agent(state: CodeGuardianState) -> dict:
         "types",
         lambda: types_analyzer.analyze(
             state["repo_root"], state["diff"], graph=state.get("import_graph")
+        )
+        # Python public-API surface changes share this agent (P2-1 increment).
+        + pytypes_analyzer.analyze(
+            state["repo_root"], state["diff"], graph=state.get("import_graph")
         ),
     )
 
@@ -87,7 +93,12 @@ def types_agent(state: CodeGuardianState) -> dict:
 def api_contract_agent(state: CodeGuardianState) -> dict:
     if _skip_docs_only(state):
         return {}
-    return _safe("api", lambda: api_analyzer.analyze(state["repo_root"], state["diff"]))
+    # Route-shape heuristic (api) plus committed-schema removal diff (schema, P2-3).
+    return _safe(
+        "api",
+        lambda: api_analyzer.analyze(state["repo_root"], state["diff"])
+        + schema_analyzer.analyze(state["repo_root"], state["diff"]),
+    )
 
 
 def database_agent(state: CodeGuardianState) -> dict:

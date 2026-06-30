@@ -539,3 +539,71 @@ def test_go_missing_test_flagged(tmp_path):
     findings = tests_analyzer.analyze(root, changed, graph=g)
     # board.go has no board_test.go and no importing test -> missing-coverage finding.
     assert any("No test found" in f.title for f in findings)
+
+
+# --- P2-1: Python public-API surface change -----------------------------------
+from codeguardian.analyzers import pytypes as pytypes_analyzer
+from codeguardian.analyzers import schema as schema_analyzer
+from codeguardian.analyzers.imports import ImportGraph as _IG
+from codeguardian.models import DiffFile as _DF, FileStatus as _FS
+
+
+def test_pytypes_flags_removed_public_def_with_blast_radius():
+    patch = (
+        "diff --git a/pkg/api.py b/pkg/api.py\n--- a/pkg/api.py\n+++ b/pkg/api.py\n"
+        "@@ -1,3 +1,1 @@\n-def public_handler():\n-    return 1\n+def renamed_handler():\n+    return 1\n"
+    )
+    graph = _IG(forward={}, reverse={"pkg/api.py": {"pkg/caller.py", "pkg/other.py"}})
+    findings = pytypes_analyzer.analyze("/root",
+        [_DF(path="pkg/api.py", status=_FS.modified, patch=patch)], graph=graph)
+    assert len(findings) == 1
+    assert "public_handler" in findings[0].title
+    assert findings[0].id.startswith("CG-PYAPI")
+    assert "pkg/caller.py" in findings[0].evidence_files
+
+
+def test_pytypes_ignores_private_and_readded_symbols():
+    # leading-underscore (private) removal is not flagged
+    priv = ("--- a/x.py\n+++ b/x.py\n-def _private():\n+def _private2():\n")
+    assert pytypes_analyzer.analyze("/r", [_DF(path="x.py", status=_FS.modified, patch=priv)],
+                                    graph=_IG(forward={}, reverse={})) == []
+    # a removed-then-readded public name is a reformat, not a removal
+    readd = ("--- a/y.py\n+++ b/y.py\n-def keep():\n+def keep():\n+    pass\n")
+    assert pytypes_analyzer.analyze("/r", [_DF(path="y.py", status=_FS.modified, patch=readd)],
+                                    graph=_IG(forward={}, reverse={})) == []
+
+
+# --- P2-3: OpenAPI / GraphQL schema diff --------------------------------------
+def test_schema_flags_removed_openapi_path():
+    patch = (
+        "diff --git a/openapi.yaml b/openapi.yaml\n--- a/openapi.yaml\n+++ b/openapi.yaml\n"
+        "@@ -10,6 +10,2 @@\n paths:\n-  /users/{id}:\n-    delete:\n-      summary: remove user\n"
+    )
+    findings = schema_analyzer.analyze("/r", [_DF(path="openapi.yaml", status=_FS.modified, patch=patch)])
+    assert len(findings) == 1
+    assert findings[0].id.startswith("CG-SCHEMA")
+    assert "/users/{id}" in findings[0].summary
+    assert findings[0].severity.value == "high"
+
+
+def test_schema_flags_removed_graphql_type_and_field():
+    patch = (
+        "diff --git a/schema.graphql b/schema.graphql\n--- a/schema.graphql\n+++ b/schema.graphql\n"
+        "@@ -1,6 +1,3 @@\n type User {\n-  email: String\n }\n-type LegacyThing {\n-  id: ID\n-}\n"
+    )
+    findings = schema_analyzer.analyze("/r", [_DF(path="schema.graphql", status=_FS.modified, patch=patch)])
+    assert len(findings) == 1
+    summary = findings[0].summary
+    assert "LegacyThing" in summary or "email" in summary
+
+
+def test_schema_ignores_additions_only():
+    patch = (
+        "--- a/openapi.yaml\n+++ b/openapi.yaml\n@@ -1,1 +1,3 @@\n paths:\n+  /new:\n+    get: {}\n"
+    )
+    assert schema_analyzer.analyze("/r", [_DF(path="openapi.yaml", status=_FS.modified, patch=patch)]) == []
+
+
+def test_schema_ignores_non_schema_files():
+    patch = "--- a/app.py\n+++ b/app.py\n-  /users:\n"
+    assert schema_analyzer.analyze("/r", [_DF(path="app.py", status=_FS.modified, patch=patch)]) == []

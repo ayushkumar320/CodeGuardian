@@ -40,6 +40,7 @@ Topic → the symbol or file to open.
 | Risk scoring (confidence-weighted aggregate) | `src/codeguardian/scoring.py` |
 | Provider router Groq→HF→deterministic + schema validation | `src/codeguardian/providers.py` (`summarize`, `answer_question`, `validate_summary`) |
 | Check summary / sticky comment / markdown artifact | `src/codeguardian/report.py` |
+| Check title (score+verdict+narrative snippet) · inline annotations · cost footer · reaction tally | `src/codeguardian/report.py` (`check_title`, `annotations_from_report`, `usage_footer`, `reaction_tally`, `FEEDBACK_FOOTER`) |
 | Retry+timeout HTTP helper | `src/codeguardian/http.py` |
 | Leveled secret-safe logging (`CODEGUARDIAN_DEBUG`) | `src/codeguardian/log.py` |
 | `--selfcheck` diagnostics | `src/codeguardian/selfcheck.py` |
@@ -47,10 +48,13 @@ Topic → the symbol or file to open.
 ### Analyzers
 | If you need… | Go to |
 |---|---|
-| Import graph (forward + reverse, single-pass, language-dispatched) | `src/codeguardian/analyzers/imports.py` (`ImportGraph`, `build_import_graph`, `_extract_py_imports`, `_resolve_py`) |
-| Test impact + missing coverage (TS + Python conventions) | `src/codeguardian/analyzers/tests.py` |
+| Import graph (forward + reverse, single-pass, language-dispatched: TS/Python/Go) | `src/codeguardian/analyzers/imports.py` (`ImportGraph`, `build_import_graph`, `_extract_py_imports`, `_resolve_py`, `_extract_go_imports`, `_resolve_go`, `_go_module_path`) |
+| Import-graph cache (sidecar persist + incremental patch across runs) | `src/codeguardian/analyzers/graph_cache.py` (`load_graph`, `save_graph`, `patch_graph`) ; env `CODEGUARDIAN_GRAPH_CACHE` ; wired in `graph/nodes.py` (`_resolve_import_graph`) |
+| Test impact + missing coverage (TS + Python + Go conventions) | `src/codeguardian/analyzers/tests.py` |
 | API contract / DB-migration / architecture (forbidden imports, layers, cycles) | `analyzers/api.py`, `analyzers/database.py`, `analyzers/architecture.py` |
-| Types-breaking-change (TS) | `analyzers/types.py` |
+| Schema breaking-change diff (OpenAPI paths/operations, GraphQL types/fields) | `analyzers/schema.py` (removal-only; runs inside `api_contract_agent`) |
+| Types-breaking-change: TS exported types | `analyzers/types.py` · Python public def/class | `analyzers/pytypes.py` (runs inside `types_agent`) |
+| Confidence calibration (lower conf for whitespace/comment-only edits) | `src/codeguardian/calibrate.py` (`calibrate_confidence`, in `risk_scoring_agent`) |
 | PR-shape (language-agnostic: oversized / deletion-heavy) | `analyzers/pr_shape.py` ; `policy.PrShape` ; `models.Category.pr_shape` |
 | Language detection + analyzer support matrix | `src/codeguardian/languages.py` (`detect`, `supports`, `_EXT_TO_LANG`, `_SUPPORT`) |
 | "Language-agnostic mode" degraded note | `graph/nodes.py` (`repository_context`) |
@@ -67,7 +71,8 @@ Topic → the symbol or file to open.
 | If you need… | Go to |
 |---|---|
 | `/codeguardian` parser (commands + free-form `ask`) | `src/codeguardian/commands/parser.py` |
-| Per-command deterministic handlers + free-form LLM Q&A | `src/codeguardian/commands/handlers.py` (`ask` uses `providers.answer_question`) |
+| Per-command deterministic handlers + free-form LLM Q&A | `src/codeguardian/commands/handlers.py` (`ask` uses `providers.answer_question`; zero-key intent router `_route_no_provider`; `show` renders hunks+findings) |
+| Follow-up Q&A context across asks in a PR | `commands/loop.py` (`load_recent_asks`) → `providers._build_qa_prompt` (`previous_qa`) |
 | Plan logic (Outcome: reply / recheck / suppression) | `src/codeguardian/commands/loop.py` (`plan`, `reply_marker`) |
 | Permissions (recheck/suppress-blocking gates) | `src/codeguardian/commands/permissions.py` |
 | Comment-event parsing + idempotency + artifact retrieval | `src/codeguardian/github/events.py` (`parse_comment_event`) ; `github/client.py` (`latest_reports`, `already_replied`) |
