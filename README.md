@@ -186,6 +186,7 @@ Out of scope:
 - [TROUBLESHOOTING.md](doc/TROUBLESHOOTING.md) — common setup and runtime issues
 - [doc/GitHub-PR-User-Flowmap.md](doc/GitHub-PR-User-Flowmap.md) — merge-page product behavior
 - [doc/IMPROVEMENT-PLAN.md](doc/IMPROVEMENT-PLAN.md) — active P0/P1/P2 backlog
+- [doc/ZERO-TOUCH-PLAN.md](doc/ZERO-TOUCH-PLAN.md) — v1.1: one-command activation + risk dashboard + quality analyzer
 - [doc/POST-V1-ROADMAP.md](doc/POST-V1-ROADMAP.md) — what v1.0 is deliberately *not* doing
 - [doc/GA-CHECKLIST.md](doc/GA-CHECKLIST.md) — v1.0 cut sequence
 - [doc/CodeGuardian-AI-Blueprint.md](doc/CodeGuardian-AI-Blueprint.md) — original long-term blueprint (historical)

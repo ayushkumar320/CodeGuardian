@@ -17,6 +17,7 @@ the one entry a node points to.
 |----|------|------|
 | ROOT | [CLAUDE.md](CLAUDE.md) | Repo working rules + strict rules + scope guardrails |
 | IMP  | [doc/IMPROVEMENT-PLAN.md](doc/IMPROVEMENT-PLAN.md) | **Active** P0/P1/P2 backlog with file-level pointers |
+| ZT   | [doc/ZERO-TOUCH-PLAN.md](doc/ZERO-TOUCH-PLAN.md) | v1.1 plan: one-command activation, risk dashboard, quality analyzer, Groq model tier |
 | GA   | [doc/GA-CHECKLIST.md](doc/GA-CHECKLIST.md) | v1.0 cut sequence (what's automated vs human) |
 | POST | [doc/POST-V1-ROADMAP.md](doc/POST-V1-ROADMAP.md) | What v1.0 is deliberately *not* doing |
 | BP   | [doc/CodeGuardian-AI-Blueprint.md](doc/CodeGuardian-AI-Blueprint.md) | Original long-term vision (historical) |
