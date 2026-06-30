@@ -112,6 +112,9 @@ class DiffSummaryFile(BaseModel):
     additions: int = 0
     deletions: int = 0
     patch_excerpt: Optional[str] = None  # first ~80 hunk lines, already redacted
+    # Whole hunks (already redacted) kept for files a finding points at, so the
+    # changed symbol isn't lost to blind truncation on a large patch (P1-6).
+    relevant_hunks: list[str] = Field(default_factory=list)
 
 
 class Blocking(BaseModel):

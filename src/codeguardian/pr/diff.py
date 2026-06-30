@@ -90,6 +90,25 @@ def _split_patches(diff_text: str) -> dict[str, Optional[str]]:
     return patches
 
 
+_HUNK_SPLIT_RE = re.compile(r"(?m)^(?=@@ )")
+
+
+def split_hunks(patch: str) -> tuple[str, list[str]]:
+    """Split a single-file unified-diff block into (header, [hunk, ...]).
+
+    The header is everything before the first ``@@`` hunk marker (the
+    ``diff --git`` / ``+++`` / ``---`` preamble); each hunk starts at its ``@@``
+    line. Returns an empty hunk list when the patch has no hunks.
+    """
+    if not patch:
+        return "", []
+    parts = _HUNK_SPLIT_RE.split(patch)
+    # First part is the preamble (may be empty if the patch starts at @@).
+    header = parts[0] if parts and not parts[0].startswith("@@ ") else ""
+    hunks = [p for p in parts if p.startswith("@@ ")]
+    return header, hunks
+
+
 def _path_from_block(block: str) -> Optional[str]:
     lines = block.splitlines()
     for line in lines:

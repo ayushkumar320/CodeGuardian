@@ -30,6 +30,7 @@ from ..memory.retrieve import context_lines, find_similar
 from ..models import DiffSummaryFile, Finding, Provider, Report, Suppression
 from ..security import safe_output
 from ..pr.classify import is_docs_only
+from ..pr.diff import split_hunks
 from ..providers import summarize
 from ..scoring import score
 from .state import CodeGuardianState
@@ -143,7 +144,8 @@ def risk_scoring_agent(state: CodeGuardianState) -> dict:
     reviewers = _reviewers(findings, policy)
 
     pr = state["pr"]
-    diff_summary = _build_diff_summary(state.get("diff", []))
+    flagged_paths = {ev for f in findings if f.suppressed is None for ev in f.evidence_files}
+    diff_summary = _build_diff_summary(state.get("diff", []), flagged_paths)
     report = Report(
         pr=pr,
         mode=policy.mode,
@@ -166,22 +168,48 @@ def risk_scoring_agent(state: CodeGuardianState) -> dict:
 # rename, added file, removed branch fits well below this), small enough to keep
 # the artifact + ask-mode prompt bounded.
 _MAX_PATCH_EXCERPT = 2400
+# Budget for the whole-hunk excerpt we keep for finding-flagged files (P1-6).
+# A little larger than the blind-truncation cap because complete hunks are the
+# point — but still bounded so the prompt stays inside its char budget.
+_MAX_RELEVANT_HUNKS_CHARS = 4000
 
 
-def _build_diff_summary(diff) -> list[DiffSummaryFile]:
+def _relevant_hunks(patch: str) -> list[str]:
+    """Whole hunks from a patch, kept up to the budget. Preferring complete
+    hunks (over a mid-hunk cut) means a symbol change buried deep in a large
+    patch survives instead of being truncated away (P1-6)."""
+    header, hunks = split_hunks(patch)
+    out: list[str] = []
+    used = len(header)
+    for hunk in hunks:
+        if used + len(hunk) > _MAX_RELEVANT_HUNKS_CHARS and out:
+            break
+        out.append(safe_output(hunk))
+        used += len(hunk)
+    return out
+
+
+def _build_diff_summary(diff, flagged_paths: set[str] | None = None) -> list[DiffSummaryFile]:
+    flagged_paths = flagged_paths or set()
     out: list[DiffSummaryFile] = []
     for f in diff or []:
         excerpt = None
+        hunks: list[str] = []
         if f.patch:
             text = f.patch
             if len(text) > _MAX_PATCH_EXCERPT:
                 text = text[:_MAX_PATCH_EXCERPT] + "\n…(truncated)"
             # Secret-redact (defense in depth — patches can contain anything).
             excerpt = safe_output(text)
+            # For files a finding points at, keep complete hunks so the changed
+            # symbol isn't lost to the blind first-N-chars truncation above.
+            if f.path in flagged_paths:
+                hunks = _relevant_hunks(f.patch)
         out.append(DiffSummaryFile(
             path=f.path, status=f.status,
             additions=f.additions, deletions=f.deletions,
             patch_excerpt=excerpt,
+            relevant_hunks=hunks,
         ))
     return out
 

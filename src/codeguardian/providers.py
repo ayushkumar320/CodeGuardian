@@ -182,7 +182,12 @@ def _build_qa_prompt(report: Report, question: str) -> str:
             "additions": f.additions,
             "deletions": f.deletions,
         }
-        if f.patch_excerpt:
+        # Prefer whole hunks for finding-flagged files (P1-6) so a changed
+        # symbol buried deep in a large patch survives; fall back to the
+        # blind-truncated excerpt for everything else.
+        if f.relevant_hunks:
+            rec["relevant_hunks"] = f.relevant_hunks
+        elif f.patch_excerpt:
             rec["patch_excerpt"] = f.patch_excerpt
         size = len(json.dumps(rec))
         if used + size > _MAX_QA_PROMPT_CHARS:

@@ -19,6 +19,7 @@ HELP_TEXT = (
     "- `/codeguardian explain` — why this risk score\n"
     "- `/codeguardian tests` — tests to run before merge\n"
     "- `/codeguardian why blocked` — the finding blocking merge + the fix\n"
+    "- `/codeguardian show <path-or-symbol>` — the changed hunks + findings for it\n"
     "- `/codeguardian compare` — what changed since the last run\n"
     "- `/codeguardian has this happened before?` — similar past PRs\n"
     "- `/codeguardian recheck` — re-run the analysis (maintainers)\n"
@@ -180,6 +181,52 @@ def ask(report: Report, question: str) -> str:
     # The result text already has the deterministic fallback when no key is
     # configured, so we just return it as-is.
     return result.text
+
+
+_SHOW_MAX_FILES = 3
+_SHOW_MAX_CHARS_PER_FILE = 3000
+
+
+def show(report: Report, target: Optional[str]) -> str:
+    """Deterministic `/codeguardian show <path-or-symbol>`: render the changed
+    hunks for matching files plus any findings that point at them. Zero LLM —
+    gives the no-key path something visually rich (P2-4).
+    """
+    if not target:
+        return "Usage: `/codeguardian show <path-or-symbol>` — e.g. `show src/board.py` or `show empty_board`."
+    needle = target.lower()
+    matches = []
+    for d in report.diff_summary:
+        hunk_text = "\n".join(d.relevant_hunks) or (d.patch_excerpt or "")
+        if needle in d.path.lower() or needle in hunk_text.lower():
+            matches.append((d, hunk_text))
+    if not matches:
+        return f"No changed file or symbol matching `{target}` in this PR's diff."
+
+    lines = [f"**Showing `{target}`** ({len(matches)} match(es) in the diff):"]
+    for d, hunk_text in matches[:_SHOW_MAX_FILES]:
+        body = hunk_text[:_SHOW_MAX_CHARS_PER_FILE]
+        if len(hunk_text) > _SHOW_MAX_CHARS_PER_FILE:
+            body += "\n…(truncated)"
+        lines += [
+            "",
+            f"### `{d.path}` · {d.status.value} (+{d.additions}/-{d.deletions})",
+            "```diff",
+            body.strip() or "(no hunk text available)",
+            "```",
+        ]
+        related = [
+            f for f in report.active_findings() if d.path in f.evidence_files
+        ]
+        if related:
+            lines.append("Findings here:")
+            for f in related:
+                lines.append(
+                    f"- `{f.id}` {f.category.value} · {f.severity.value} — {f.title}"
+                )
+    if len(matches) > _SHOW_MAX_FILES:
+        lines += ["", f"_…and {len(matches) - _SHOW_MAX_FILES} more match(es)._"]
+    return "\n".join(lines)
 
 
 def compare(current: Report, previous: Optional[Report]) -> str:

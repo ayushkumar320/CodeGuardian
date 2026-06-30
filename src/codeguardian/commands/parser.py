@@ -37,6 +37,7 @@ class CommandName(str, Enum):
     summary = "summary"
     history = "history"
     ignore = "ignore"
+    show = "show"      # deterministic: render diff hunks + findings for a path/symbol
     ask = "ask"        # free-form question answered by the LLM, evidence-only
     unknown = "unknown"  # bare `/codeguardian` with nothing after
 
@@ -57,6 +58,7 @@ class Command:
     reason: Optional[str] = None
     category: Optional[str] = None  # for `explain <category> risk`
     question: Optional[str] = None  # free-form text for `ask`
+    target: Optional[str] = None    # for `show <path-or-symbol>` (original case)
     raw: str = ""
     legacy_mention: bool = False  # triggered via the deprecated `@codeguardian` form
 
@@ -70,6 +72,7 @@ class Command:
             CommandName.compare,
             CommandName.summary,
             CommandName.history,
+            CommandName.show,
             CommandName.ask,
         }
 
@@ -116,6 +119,12 @@ def _parse(body: str) -> Optional[Command]:
     if first == "explain":
         category = next((_CATEGORY_ALIASES[t] for t in tokens[1:] if t in _CATEGORY_ALIASES), None)
         return Command(CommandName.explain, category=category, raw=after)
+
+    if first == "show":
+        # Keep the original case so symbol matching (e.g. `Board`) works.
+        rest = after.split(None, 1)
+        target = rest[1].strip() if len(rest) > 1 else None
+        return Command(CommandName.show, target=target, raw=after)
 
     simple = {
         "help": CommandName.help,
